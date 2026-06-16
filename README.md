@@ -1,4 +1,4 @@
-# Agentoom Dataset Engine
+# Agentoom Train
 
 > A configurable dataset generation, refinement, and evaluation system built for the Agentoom ecosystem.
 
@@ -110,7 +110,7 @@ In practice, most failures happen because of:
 * lack of evaluation
 * no structured refinement process
 
-The **Agentoom Dataset Engine** was created to solve this problem.
+The **Agentoom Train** was created to solve this problem.
 
 Instead of simply generating synthetic data, it provides a **complete dataset engineering workflow**:
 
