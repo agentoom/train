@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\DatasetProject;
 use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
@@ -7,7 +8,7 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 });
 
 Broadcast::channel('dataset-project.{datasetProjectId}', function ($user, int $datasetProjectId) {
-    return \App\Models\DatasetProject::where('id', $datasetProjectId)
+    return DatasetProject::where('id', $datasetProjectId)
         ->where('user_id', $user->id)
         ->exists();
 });

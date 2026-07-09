@@ -93,7 +93,7 @@ class DistributionDriftEvaluator implements DatasetEvaluatorInterface
             $rate <= 0.07 => 5.0 + (($rate - 0.03) / 0.04) * 15.0,
             $rate <= 0.15 => 20.0 + (($rate - 0.07) / 0.08) * 20.0,
             $rate <= 0.25 => 40.0 + (($rate - 0.15) / 0.10) * 20.0,
-            default       => 60.0 + min(40.0, (($rate - 0.25) / 0.75) * 40.0),
+            default => 60.0 + min(40.0, (($rate - 0.25) / 0.75) * 40.0),
         };
     }
 

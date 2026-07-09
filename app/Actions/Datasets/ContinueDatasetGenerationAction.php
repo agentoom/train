@@ -18,9 +18,10 @@ class ContinueDatasetGenerationAction
     {
         $version = $project->versions()->latest()->first();
 
-        if (!$version) {
+        if (! $version) {
             // If no version exists, just start a new generation
             app(StartDatasetGenerationAction::class)->execute($project);
+
             return;
         }
 

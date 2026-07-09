@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\DatasetSourceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DatasetSource extends Model
 {
-    /** @use HasFactory<\Database\Factories\DatasetSourceFactory> */
+    /** @use HasFactory<DatasetSourceFactory> */
     use HasFactory;
 
     protected $fillable = [

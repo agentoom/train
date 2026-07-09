@@ -13,7 +13,7 @@ test('exportMany produces valid JSON with datasets array', function () {
     $user = User::factory()->create();
     $projects = DatasetProject::factory()->count(2)->create(['user_id' => $user->id]);
 
-    $service = new DatasetSettingsExportService();
+    $service = new DatasetSettingsExportService;
     $json = $service->exportMany($projects);
 
     $decoded = json_decode($json, true);
@@ -33,7 +33,7 @@ test('exportMany includes expected settings fields', function () {
         'evaluation_enabled' => true,
     ]);
 
-    $service = new DatasetSettingsExportService();
+    $service = new DatasetSettingsExportService;
     $json = $service->exportMany(collect([$project]));
     $decoded = json_decode($json, true);
     $data = $decoded['datasets'][0];
@@ -48,7 +48,7 @@ test('exportMany does not include user_id or provider ids', function () {
     $user = User::factory()->create();
     $project = DatasetProject::factory()->create(['user_id' => $user->id]);
 
-    $service = new DatasetSettingsExportService();
+    $service = new DatasetSettingsExportService;
     $json = $service->exportMany(collect([$project]));
     $decoded = json_decode($json, true);
     $data = $decoded['datasets'][0];
@@ -64,7 +64,7 @@ test('exportOne returns settings array for a single project', function () {
     $user = User::factory()->create();
     $project = DatasetProject::factory()->create(['user_id' => $user->id, 'name' => 'Solo']);
 
-    $service = new DatasetSettingsExportService();
+    $service = new DatasetSettingsExportService;
     $data = $service->exportOne($project);
 
     expect($data)->toBeArray()
@@ -84,7 +84,7 @@ test('parse accepts multi-dataset export format', function () {
         ],
     ]);
 
-    $service = new DatasetSettingsImportService();
+    $service = new DatasetSettingsImportService;
     $datasets = $service->parse($json);
 
     expect($datasets)->toHaveCount(2)
@@ -95,7 +95,7 @@ test('parse accepts multi-dataset export format', function () {
 test('parse accepts single-dataset export format', function () {
     $json = json_encode(['name' => 'Single Dataset', 'model' => 'gpt-4o-mini']);
 
-    $service = new DatasetSettingsImportService();
+    $service = new DatasetSettingsImportService;
     $datasets = $service->parse($json);
 
     expect($datasets)->toHaveCount(1)
@@ -103,26 +103,26 @@ test('parse accepts single-dataset export format', function () {
 });
 
 test('parse throws on invalid JSON', function () {
-    $service = new DatasetSettingsImportService();
+    $service = new DatasetSettingsImportService;
     $service->parse('not-json');
-})->throws(\InvalidArgumentException::class, 'Invalid JSON');
+})->throws(InvalidArgumentException::class, 'Invalid JSON');
 
 test('parse throws on unrecognised format', function () {
-    $service = new DatasetSettingsImportService();
+    $service = new DatasetSettingsImportService;
     $service->parse(json_encode(['foo' => 'bar']));
-})->throws(\InvalidArgumentException::class, 'Unrecognised export format');
+})->throws(InvalidArgumentException::class, 'Unrecognised export format');
 
 test('parse throws when datasets array is empty', function () {
-    $service = new DatasetSettingsImportService();
+    $service = new DatasetSettingsImportService;
     $service->parse(json_encode(['version' => '1.0', 'datasets' => []]));
-})->throws(\InvalidArgumentException::class, 'no datasets');
+})->throws(InvalidArgumentException::class, 'no datasets');
 
 test('parse throws when a dataset is missing name', function () {
     $json = json_encode(['datasets' => [['model' => 'gpt-4o']]]);
 
-    $service = new DatasetSettingsImportService();
+    $service = new DatasetSettingsImportService;
     $service->parse($json);
-})->throws(\InvalidArgumentException::class, 'name');
+})->throws(InvalidArgumentException::class, 'name');
 
 test('import creates dataset projects for the user', function () {
     $user = User::factory()->create();
@@ -132,7 +132,7 @@ test('import creates dataset projects for the user', function () {
         ['name' => 'Imported B', 'model' => 'claude-3', 'record_count' => 50],
     ];
 
-    $service = new DatasetSettingsImportService();
+    $service = new DatasetSettingsImportService;
     $created = $service->import($datasets, $user);
 
     expect($created)->toHaveCount(2)
@@ -149,7 +149,7 @@ test('import strips disallowed fields like user_id from payload', function () {
 
     $datasets = [['name' => 'Sneaky', 'user_id' => $other->id]];
 
-    $service = new DatasetSettingsImportService();
+    $service = new DatasetSettingsImportService;
     $created = $service->import($datasets, $user);
 
     expect($created[0]->user_id)->toBe($user->id);

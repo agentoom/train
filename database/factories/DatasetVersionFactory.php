@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\DatasetStatus;
+use App\Models\DatasetProject;
 use App\Models\DatasetVersion;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,14 +20,14 @@ class DatasetVersionFactory extends Factory
     public function definition(): array
     {
         return [
-            'dataset_project_id' => \App\Models\DatasetProject::factory(),
+            'dataset_project_id' => DatasetProject::factory(),
             'version_number' => 1,
             'ai_provider_id' => null,
             'model' => 'gpt-4o-mini',
             'system_prompt_snapshot' => 'You are a helpful assistant.',
             'schema_snapshot' => null,
             'record_count' => 10,
-            'status' => \App\Enums\DatasetStatus::Draft,
+            'status' => DatasetStatus::Draft,
         ];
     }
 }

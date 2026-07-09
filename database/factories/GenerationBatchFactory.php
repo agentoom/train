@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\BatchStatus;
+use App\Models\DatasetVersion;
 use App\Models\GenerationBatch;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,11 +20,11 @@ class GenerationBatchFactory extends Factory
     public function definition(): array
     {
         return [
-            'dataset_version_id' => \App\Models\DatasetVersion::factory(),
+            'dataset_version_id' => DatasetVersion::factory(),
             'batch_number' => 1,
             'offset' => 0,
             'limit' => 10,
-            'status' => \App\Enums\BatchStatus::Pending,
+            'status' => BatchStatus::Pending,
             'retry_count' => 0,
             'started_at' => null,
             'completed_at' => null,
@@ -36,7 +38,7 @@ class GenerationBatchFactory extends Factory
     public function completed(): static
     {
         return $this->state([
-            'status' => \App\Enums\BatchStatus::Completed,
+            'status' => BatchStatus::Completed,
             'completed_at' => now(),
         ]);
     }
@@ -44,7 +46,7 @@ class GenerationBatchFactory extends Factory
     public function failed(): static
     {
         return $this->state([
-            'status' => \App\Enums\BatchStatus::Failed,
+            'status' => BatchStatus::Failed,
             'error_message' => 'Test failure',
         ]);
     }

@@ -3,7 +3,6 @@
 namespace App\Livewire\Providers;
 
 use App\Actions\Providers\TestProviderConnectionAction;
-use App\DTOs\ConnectionHealthDTO;
 use App\Models\AIProvider;
 use Illuminate\View\View;
 use Livewire\Component;
@@ -23,7 +22,7 @@ class ProviderConnectionTest extends Component
 
     public bool $testing = false;
 
-    public function testConnection(): void
+    public function test_connection(): void
     {
         $provider = AIProvider::findOrFail($this->providerId);
         $this->authorize('view', $provider);

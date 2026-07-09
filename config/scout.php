@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\DatasetRow;
+
 return [
 
     /*
@@ -181,7 +183,7 @@ return [
         ],
         // 'max_total_results' => env('TYPESENSE_MAX_TOTAL_RESULTS', 1000),
         'model-settings' => [
-            \App\Models\DatasetRow::class => [
+            DatasetRow::class => [
                 'collection-schema' => [
                     'fields' => [
                         [

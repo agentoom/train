@@ -16,19 +16,19 @@ use App\Models\DatasetRow;
 class ExportPresetTransformer
 {
     /**
-     * @return array<mixed>|null  null means skip this row
+     * @return array<mixed>|null null means skip this row
      */
     public function transform(DatasetRow $row, ExportFormat $format): ?array
     {
         return match ($format) {
-            ExportFormat::OpenAI            => $this->toOpenAI($row),
-            ExportFormat::Anthropic         => $this->toAnthropic($row),
-            ExportFormat::HuggingFace       => $this->toHuggingFace($row),
-            ExportFormat::Axolotl           => $this->toAxolotl($row),
-            ExportFormat::Unsloth           => $this->toUnsloth($row),
-            ExportFormat::LlamaFactory      => $this->toLlamaFactory($row),
+            ExportFormat::OpenAI => $this->toOpenAI($row),
+            ExportFormat::Anthropic => $this->toAnthropic($row),
+            ExportFormat::HuggingFace => $this->toHuggingFace($row),
+            ExportFormat::Axolotl => $this->toAxolotl($row),
+            ExportFormat::Unsloth => $this->toUnsloth($row),
+            ExportFormat::LlamaFactory => $this->toLlamaFactory($row),
             ExportFormat::GenericToolCalling => $this->toGenericToolCalling($row),
-            default                         => $row->payload,
+            default => $row->payload,
         };
     }
 
@@ -57,7 +57,7 @@ class ExportPresetTransformer
     private function toAnthropic(DatasetRow $row): ?array
     {
         $messages = $this->resolveMessages($row);
-        $payload  = $row->payload ?? [];
+        $payload = $row->payload ?? [];
 
         $system = $payload['system'] ?? null;
 
@@ -77,7 +77,7 @@ class ExportPresetTransformer
             ));
 
             return array_filter([
-                'system'   => $system,
+                'system' => $system,
                 'messages' => $anthropicMessages,
             ]);
         }
@@ -89,7 +89,7 @@ class ExportPresetTransformer
             ));
 
             return array_filter([
-                'system'   => $system,
+                'system' => $system,
                 'messages' => $msgs,
             ]);
         }
@@ -100,7 +100,7 @@ class ExportPresetTransformer
         ));
 
         return array_filter([
-            'system'   => $system,
+            'system' => $system,
             'messages' => $msgs,
         ]);
     }
@@ -110,11 +110,11 @@ class ExportPresetTransformer
     private function toHuggingFace(DatasetRow $row): ?array
     {
         $messages = $this->resolveMessages($row);
-        $payload  = $row->payload ?? [];
+        $payload = $row->payload ?? [];
 
         if ($messages !== null) {
             return ['conversations' => array_map(fn ($m) => [
-                'from'  => $this->hfRole($m['role'] ?? 'user'),
+                'from' => $this->hfRole($m['role'] ?? 'user'),
                 'value' => $m['content'] ?? '',
             ], $messages)];
         }
@@ -130,16 +130,16 @@ class ExportPresetTransformer
 
     private function toAxolotl(DatasetRow $row): ?array
     {
-        $hf      = $this->toHuggingFace($row);
+        $hf = $this->toHuggingFace($row);
         $payload = $row->payload ?? [];
-        $system  = $payload['system'] ?? null;
+        $system = $payload['system'] ?? null;
 
         if ($hf === null) {
             return null;
         }
 
         return array_filter([
-            'system'        => $system,
+            'system' => $system,
             'conversations' => $hf['conversations'],
         ]);
     }
@@ -156,16 +156,16 @@ class ExportPresetTransformer
     private function toLlamaFactory(DatasetRow $row): ?array
     {
         $messages = $this->resolveMessages($row);
-        $payload  = $row->payload ?? [];
+        $payload = $row->payload ?? [];
 
         if ($messages !== null) {
-            $system    = $payload['system'] ?? null;
-            $history   = [];
-            $lastUser  = null;
+            $system = $payload['system'] ?? null;
+            $history = [];
+            $lastUser = null;
             $lastAssistant = null;
 
             foreach ($messages as $m) {
-                $role    = $m['role'] ?? '';
+                $role = $m['role'] ?? '';
                 $content = $m['content'] ?? '';
 
                 if ($role === 'system') {
@@ -174,7 +174,7 @@ class ExportPresetTransformer
                     if ($lastUser !== null && $lastAssistant !== null) {
                         $history[] = [$lastUser, $lastAssistant];
                     }
-                    $lastUser      = $content;
+                    $lastUser = $content;
                     $lastAssistant = null;
                 } elseif ($role === 'assistant') {
                     $lastAssistant = $content;
@@ -182,21 +182,21 @@ class ExportPresetTransformer
             }
 
             return array_filter([
-                'system'    => $system,
-                'history'   => $history ?: null,
-                'input'     => $lastUser ?? '',
-                'output'    => $lastAssistant ?? '',
+                'system' => $system,
+                'history' => $history ?: null,
+                'input' => $lastUser ?? '',
+                'output' => $lastAssistant ?? '',
             ]);
         }
 
         $instruction = $payload['instruction'] ?? $payload['system'] ?? $payload['prompt'] ?? '';
-        $input       = $payload['input'] ?? $payload['user'] ?? $payload['question'] ?? '';
-        $output      = $payload['output'] ?? $payload['assistant'] ?? $payload['answer'] ?? '';
+        $input = $payload['input'] ?? $payload['user'] ?? $payload['question'] ?? '';
+        $output = $payload['output'] ?? $payload['assistant'] ?? $payload['answer'] ?? '';
 
         return array_filter([
             'instruction' => $instruction,
-            'input'       => $input,
-            'output'      => $output,
+            'input' => $input,
+            'output' => $output,
         ]);
     }
 
@@ -204,34 +204,34 @@ class ExportPresetTransformer
 
     private function toGenericToolCalling(DatasetRow $row): ?array
     {
-        $payload  = $row->payload ?? [];
+        $payload = $row->payload ?? [];
         $messages = $this->resolveMessages($row);
 
         $tools = $payload['tools'] ?? $payload['functions'] ?? null;
 
         if ($messages !== null) {
             return array_filter([
-                'tools'    => $tools,
+                'tools' => $tools,
                 'messages' => $messages,
                 'expected_behavior' => $row->expected_behavior,
-                'failure_reason'    => $row->failure_reason,
+                'failure_reason' => $row->failure_reason,
             ]);
         }
 
         if ($this->hasToolCalls($payload)) {
             return array_filter([
-                'tools'    => $tools,
+                'tools' => $tools,
                 'messages' => $this->payloadToMessages($payload),
                 'expected_behavior' => $row->expected_behavior,
-                'failure_reason'    => $row->failure_reason,
+                'failure_reason' => $row->failure_reason,
             ]);
         }
 
         return array_filter([
-            'tools'    => $tools,
+            'tools' => $tools,
             'messages' => $this->qaToMessages($payload),
             'expected_behavior' => $row->expected_behavior,
-            'failure_reason'    => $row->failure_reason,
+            'failure_reason' => $row->failure_reason,
         ]);
     }
 
@@ -267,7 +267,7 @@ class ExportPresetTransformer
             $messages[] = ['role' => 'system', 'content' => $payload['system']];
         }
 
-        $user      = $payload['user'] ?? $payload['question'] ?? $payload['input'] ?? $payload['prompt'] ?? '';
+        $user = $payload['user'] ?? $payload['question'] ?? $payload['input'] ?? $payload['prompt'] ?? '';
         $assistant = $payload['assistant'] ?? $payload['answer'] ?? $payload['output'] ?? $payload['response'] ?? '';
 
         if ($user !== '') {
@@ -319,7 +319,7 @@ class ExportPresetTransformer
         }
 
         return [
-            'role'    => $role === 'assistant' ? 'assistant' : 'user',
+            'role' => $role === 'assistant' ? 'assistant' : 'user',
             'content' => $message['content'] ?? '',
         ];
     }
@@ -346,8 +346,8 @@ class ExportPresetTransformer
     {
         return match ($role) {
             'assistant' => 'gpt',
-            'system'    => 'system',
-            default     => 'human',
+            'system' => 'system',
+            default => 'human',
         };
     }
 
@@ -355,7 +355,7 @@ class ExportPresetTransformer
     private function qaToHfConversations(array $payload): array
     {
         return array_map(fn ($m) => [
-            'from'  => $this->hfRole($m['role'] ?? 'user'),
+            'from' => $this->hfRole($m['role'] ?? 'user'),
             'value' => $m['content'] ?? '',
         ], $this->qaToMessages($payload));
     }
@@ -364,7 +364,7 @@ class ExportPresetTransformer
     private function payloadToHfConversations(array $payload): array
     {
         return array_map(fn ($m) => [
-            'from'  => $this->hfRole($m['role'] ?? 'user'),
+            'from' => $this->hfRole($m['role'] ?? 'user'),
             'value' => $m['content'] ?? '',
         ], $this->payloadToMessages($payload));
     }

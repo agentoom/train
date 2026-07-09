@@ -45,11 +45,11 @@ function makeCalibrationBatch(array $rows = [], array $metadata = []): DatasetBa
 function makeFullPipeline(): EvaluationPipeline
 {
     return new EvaluationPipeline([
-        new TaskPerformanceEvaluator(),
-        new ConversationQualityEvaluator(),
-        new DistributionDriftEvaluator(),
-        new NegativeRatioEvaluator(),
-        new EdgeCaseEvaluator(),
+        new TaskPerformanceEvaluator,
+        new ConversationQualityEvaluator,
+        new DistributionDriftEvaluator,
+        new NegativeRatioEvaluator,
+        new EdgeCaseEvaluator,
     ]);
 }
 

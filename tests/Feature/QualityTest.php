@@ -1,23 +1,33 @@
 <?php
 
+use App\DTOs\GenerationResultDTO;
 use App\Enums\BatchStatus;
 use App\Enums\DatasetStatus;
+use App\Jobs\GenerateDatasetBatchJob;
+use App\Livewire\Datasets\DatasetDetail;
+use App\Livewire\Datasets\DatasetForm;
 use App\Models\AIProvider;
 use App\Models\DatasetProject;
 use App\Models\DatasetRow;
 use App\Models\DatasetVersion;
 use App\Models\GenerationBatch;
+use App\Models\User;
+use App\Services\AI\InferenceExecutionService;
+use App\Services\Dataset\AugmentationPromptBuilderService;
+use App\Services\Dataset\ConversationPromptBuilderService;
+use App\Services\Dataset\DatasetProgressService;
+use App\Services\Dataset\DatasetSourceParsingService;
+use App\Services\Dataset\DatasetValidationService;
 use App\Services\Dataset\HashDeduplicationService;
+use App\Services\Dataset\NegativeExampleService;
 use App\Services\Dataset\PromptBuilderService;
 use App\Services\Dataset\SemanticDeduplicationService;
-use App\Jobs\GenerateDatasetBatchJob;
-use App\DTOs\GenerationResultDTO;
-use App\Services\AI\InferenceExecutionService;
-use App\Services\Dataset\DatasetProgressService;
-use App\Livewire\Datasets\DatasetForm;
-use App\Livewire\Datasets\DatasetDetail;
+use App\Services\Evaluation\DatasetEvaluationService;
+use App\Services\Pipeline\CriticService;
+use App\Services\Pipeline\RefinerService;
+use App\Support\Cost\CostEstimator;
+use App\Support\Json\JsonRepairer;
 use Livewire\Livewire;
-use App\Models\User;
 
 // --- PromptBuilderService ---
 
@@ -295,19 +305,19 @@ test('GenerateDatasetBatchJob marks duplicate rows and tracks count', function (
     (new GenerateDatasetBatchJob($batch->id))->handle(
         app(InferenceExecutionService::class),
         app(PromptBuilderService::class),
-        app(\App\Services\Dataset\ConversationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetValidationService::class),
+        app(ConversationPromptBuilderService::class),
+        app(DatasetValidationService::class),
         app(DatasetProgressService::class),
-        app(\App\Support\Json\JsonRepairer::class),
-        app(\App\Support\Cost\CostEstimator::class),
+        app(JsonRepairer::class),
+        app(CostEstimator::class),
         app(HashDeduplicationService::class),
         app(SemanticDeduplicationService::class),
-        app(\App\Services\Evaluation\DatasetEvaluationService::class),
-        app(\App\Services\Pipeline\CriticService::class),
-        app(\App\Services\Pipeline\RefinerService::class),
-        app(\App\Services\Dataset\NegativeExampleService::class),
-        app(\App\Services\Dataset\AugmentationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetSourceParsingService::class),
+        app(DatasetEvaluationService::class),
+        app(CriticService::class),
+        app(RefinerService::class),
+        app(NegativeExampleService::class),
+        app(AugmentationPromptBuilderService::class),
+        app(DatasetSourceParsingService::class),
     );
 
     $freshBatch = $batch->fresh();

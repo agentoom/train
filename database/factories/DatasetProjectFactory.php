@@ -2,7 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\DatasetStatus;
 use App\Models\DatasetProject;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,7 +20,7 @@ class DatasetProjectFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => \App\Models\User::factory(),
+            'user_id' => User::factory(),
             'ai_provider_id' => null,
             'name' => fake()->words(3, true),
             'description' => fake()->sentence(),
@@ -51,7 +53,7 @@ class DatasetProjectFactory extends Factory
             'temperature' => 0.7,
             'max_tokens' => 2048,
             'strategy' => null,
-            'status' => \App\Enums\DatasetStatus::Draft,
+            'status' => DatasetStatus::Draft,
         ];
     }
 
@@ -64,11 +66,11 @@ class DatasetProjectFactory extends Factory
 
     public function queued(): static
     {
-        return $this->state(['status' => \App\Enums\DatasetStatus::Queued]);
+        return $this->state(['status' => DatasetStatus::Queued]);
     }
 
     public function completed(): static
     {
-        return $this->state(['status' => \App\Enums\DatasetStatus::Completed, 'completed_at' => now()]);
+        return $this->state(['status' => DatasetStatus::Completed, 'completed_at' => now()]);
     }
 }

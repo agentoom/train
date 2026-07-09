@@ -1,11 +1,12 @@
 <?php
 
+use App\Jobs\RunDatasetEvaluationJob;
 use App\Livewire\Evaluation\EvaluationIndex;
 use App\Models\DatasetEvaluationReport;
 use App\Models\DatasetProject;
 use App\Models\DatasetVersion;
 use App\Models\User;
-use App\Services\DatasetEvaluation\DatasetEvaluationService;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 
 test('evaluation page requires authentication', function () {
@@ -73,21 +74,12 @@ test('runEvaluation shows error when no version selected', function () {
         ->assertSet('errorMessage', 'Please select a dataset version to evaluate.');
 });
 
-test('runEvaluation calls evaluation service and clears selection', function () {
+test('runEvaluation dispatches evaluation job and clears selection', function () {
+    Queue::fake();
+
     $user = User::factory()->create();
     $project = DatasetProject::factory()->create(['user_id' => $user->id]);
     $version = DatasetVersion::factory()->create(['dataset_project_id' => $project->id]);
-
-    $report = DatasetEvaluationReport::factory()->create([
-        'dataset_version_id' => $version->id,
-        'overall_score' => 80.0,
-        'passed' => true,
-        'verdict' => 'All good.',
-    ]);
-
-    $mockService = Mockery::mock(DatasetEvaluationService::class);
-    $mockService->shouldReceive('evaluate')->once()->andReturn($report);
-    $this->app->instance(DatasetEvaluationService::class, $mockService);
 
     Livewire::actingAs($user)
         ->test(EvaluationIndex::class)
@@ -95,7 +87,9 @@ test('runEvaluation calls evaluation service and clears selection', function () 
         ->call('runEvaluation')
         ->assertSet('selectedVersionId', null)
         ->assertSet('errorMessage', null)
-        ->assertDispatched('evaluation-complete');
+        ->assertDispatched('evaluation-queued');
+
+    Queue::assertPushed(RunDatasetEvaluationJob::class, fn ($job) => $job->versionId === $version->id);
 });
 
 test('runEvaluation rejects version belonging to another user', function () {

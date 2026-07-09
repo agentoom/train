@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Livewire\Components;
 
 use Illuminate\View\View;

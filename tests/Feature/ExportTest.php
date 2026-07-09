@@ -186,17 +186,17 @@ test('dashboard overview shows today token usage from GenerationUsage', function
     $provider = AIProvider::factory()->for($user)->create();
 
     GenerationUsage::create([
-        'dataset_project_id'  => $project->id,
-        'dataset_version_id'  => $version->id,
+        'dataset_project_id' => $project->id,
+        'dataset_version_id' => $version->id,
         'generation_batch_id' => $batch->id,
-        'ai_provider_id'      => $provider->id,
-        'model'               => 'gpt-4o-mini',
-        'prompt_tokens'       => 100,
-        'completion_tokens'   => 200,
-        'total_tokens'        => 300,
-        'estimated_cost'      => 0.001,
-        'latency_ms'          => 500,
-        'created_at'          => now(),
+        'ai_provider_id' => $provider->id,
+        'model' => 'gpt-4o-mini',
+        'prompt_tokens' => 100,
+        'completion_tokens' => 200,
+        'total_tokens' => 300,
+        'estimated_cost' => 0.001,
+        'latency_ms' => 500,
+        'created_at' => now(),
     ]);
 
     Livewire::actingAs($user)

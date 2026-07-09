@@ -2,9 +2,10 @@
 
 namespace App\Livewire\Evaluation;
 
+use App\Jobs\RunDatasetEvaluationJob;
 use App\Models\DatasetEvaluationReport;
 use App\Models\DatasetVersion;
-use App\Services\DatasetEvaluation\DatasetEvaluationService;
+use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Livewire\Attributes\Title;
@@ -42,13 +43,14 @@ class EvaluationIndex extends Component
         $this->isRunning = true;
 
         try {
-            $service = app(DatasetEvaluationService::class);
-            $service->evaluate($version);
+            dispatch(new RunDatasetEvaluationJob($version->id));
 
             $this->isRunning = false;
             $this->selectedVersionId = null;
 
-            $this->dispatch('evaluation-complete');
+            $this->dispatch('evaluation-queued');
+
+            Flux::toast(variant: 'success', text: __('Evaluation has been queued and will run in the background.'));
         } catch (\Throwable $e) {
             $this->isRunning = false;
             $this->errorMessage = $e->getMessage();

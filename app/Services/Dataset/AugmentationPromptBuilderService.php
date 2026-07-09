@@ -10,6 +10,7 @@ class AugmentationPromptBuilderService
 {
     /** Minimum and maximum examples to include per batch prompt. */
     private const MIN_EXAMPLES = 5;
+
     private const MAX_EXAMPLES = 20;
 
     /**
@@ -92,10 +93,10 @@ class AugmentationPromptBuilderService
     private function buildSystemPrompt(string $mode): string
     {
         $modeInstructions = match ($mode) {
-            'diverse'     => 'Generate broader scenarios inspired by the examples. Increase novelty while staying realistic and domain-consistent.',
-            'edge_cases'  => 'Generate difficult, unusual, or edge-case scenarios based on the examples. Include angry customers, incomplete information, conflicting requests, ambiguous intent, and rare workflows.',
+            'diverse' => 'Generate broader scenarios inspired by the examples. Increase novelty while staying realistic and domain-consistent.',
+            'edge_cases' => 'Generate difficult, unusual, or edge-case scenarios based on the examples. Include angry customers, incomplete information, conflicting requests, ambiguous intent, and rare workflows.',
             'adversarial' => 'Generate adversarial or failure scenarios based on the examples. Include malicious prompts, tool confusion, contradictory instructions, and unrealistic user behavior.',
-            default       => 'Generate realistic variants that are close to the original examples. Preserve domain language, tone, and structure.',
+            default => 'Generate realistic variants that are close to the original examples. Preserve domain language, tone, and structure.',
         };
 
         return implode("\n", [
@@ -146,7 +147,7 @@ OUTPUT FORMAT REQUIREMENTS:
 
         // Schema
         if ($schema) {
-            $parts[] = "Each entry MUST match this JSON schema exactly:\n" . json_encode($schema, JSON_PRETTY_PRINT);
+            $parts[] = "Each entry MUST match this JSON schema exactly:\n".json_encode($schema, JSON_PRETTY_PRINT);
         }
 
         // Mode-specific instructions
@@ -178,16 +179,16 @@ OUTPUT FORMAT REQUIREMENTS:
         $strengthLabel = match (true) {
             $strength <= 0.3 => 'low (stay very close to source patterns)',
             $strength >= 0.7 => 'high (strong novelty, significant variation)',
-            default          => 'medium (balanced variation)',
+            default => 'medium (balanced variation)',
         };
 
         $base = "Augmentation strength: {$strengthLabel}.";
 
-        return $base . "\n" . match ($mode) {
-            'diverse'     => "Mode: DIVERSE — Generate broader scenarios inspired by originals. Increase novelty. Cover different sub-topics, use cases, and user types.",
-            'edge_cases'  => "Mode: EDGE CASES — Generate difficult scenarios: angry users, incomplete information, conflicting requests, ambiguous intent, rare workflows.",
-            'adversarial' => "Mode: ADVERSARIAL — Generate failure scenarios: malicious prompts, tool confusion, contradictory instructions, jailbreak attempts, unrealistic behavior.",
-            default       => "Mode: SIMILAR — Generate realistic variants close to originals. Preserve domain language and structure while varying specific details.",
+        return $base."\n".match ($mode) {
+            'diverse' => 'Mode: DIVERSE — Generate broader scenarios inspired by originals. Increase novelty. Cover different sub-topics, use cases, and user types.',
+            'edge_cases' => 'Mode: EDGE CASES — Generate difficult scenarios: angry users, incomplete information, conflicting requests, ambiguous intent, rare workflows.',
+            'adversarial' => 'Mode: ADVERSARIAL — Generate failure scenarios: malicious prompts, tool confusion, contradictory instructions, jailbreak attempts, unrealistic behavior.',
+            default => 'Mode: SIMILAR — Generate realistic variants close to originals. Preserve domain language and structure while varying specific details.',
         };
     }
 

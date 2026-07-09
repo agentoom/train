@@ -20,13 +20,13 @@ class DatasetSourceParsingService
         $extension = strtolower($file->getClientOriginalExtension());
 
         $rows = match ($extension) {
-            'json'        => $this->parseJson($file),
-            'jsonl'       => $this->parseJsonl($file),
-            'csv'         => $this->parseCsv($file),
-            'txt'         => $this->parseTxt($file),
+            'json' => $this->parseJson($file),
+            'jsonl' => $this->parseJsonl($file),
+            'csv' => $this->parseCsv($file),
+            'txt' => $this->parseTxt($file),
             'md', 'markdown' => $this->parseTxt($file),
-            'xlsx'        => $this->parseXlsx($file),
-            default       => $this->parseTxt($file),
+            'xlsx' => $this->parseXlsx($file),
+            default => $this->parseTxt($file),
         };
 
         $rows = array_slice($rows, 0, self::MAX_SAMPLE_ROWS);
@@ -35,8 +35,8 @@ class DatasetSourceParsingService
         $metadata = $this->buildMetadata($rows, $extension);
 
         return [
-            'rows'     => $rows,
-            'schema'   => $schema,
+            'rows' => $rows,
+            'schema' => $schema,
             'metadata' => $metadata,
         ];
     }
@@ -72,9 +72,9 @@ class DatasetSourceParsingService
 
         try {
             $rows = match ($sourceType) {
-                'json'  => $this->parseJsonContent($content),
+                'json' => $this->parseJsonContent($content),
                 'jsonl' => $this->parseJsonlContent($content),
-                'csv'   => $this->parseCsvFromPath($tmp),
+                'csv' => $this->parseCsvFromPath($tmp),
                 default => $this->parseTxtContent($content),
             };
         } finally {
@@ -275,7 +275,7 @@ class DatasetSourceParsingService
         }
 
         return [
-            'type'       => 'object',
+            'type' => 'object',
             'properties' => $properties,
         ];
     }
@@ -283,12 +283,12 @@ class DatasetSourceParsingService
     private function phpTypeToJsonType(mixed $value): string
     {
         return match (true) {
-            is_null($value)   => 'null',
-            is_bool($value)   => 'boolean',
-            is_int($value)    => 'integer',
-            is_float($value)  => 'number',
-            is_array($value)  => 'array',
-            default           => 'string',
+            is_null($value) => 'null',
+            is_bool($value) => 'boolean',
+            is_int($value) => 'integer',
+            is_float($value) => 'number',
+            is_array($value) => 'array',
+            default => 'string',
         };
     }
 
@@ -340,11 +340,11 @@ class DatasetSourceParsingService
         }
 
         return [
-            'source_type'        => $extension,
-            'row_count'          => count($rows),
-            'estimated_schema'   => array_keys($allKeys),
+            'source_type' => $extension,
+            'row_count' => count($rows),
+            'estimated_schema' => array_keys($allKeys),
             'field_distribution' => $fieldDistribution,
-            'common_patterns'    => $commonPatterns,
+            'common_patterns' => $commonPatterns,
         ];
     }
 }

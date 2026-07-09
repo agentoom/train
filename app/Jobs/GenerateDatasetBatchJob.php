@@ -3,15 +3,17 @@
 namespace App\Jobs;
 
 use App\Enums\BatchStatus;
+use App\Models\DatasetProject;
 use App\Models\DatasetProjectLog;
 use App\Models\DatasetRow;
 use App\Models\GenerationBatch;
 use App\Models\GenerationUsage;
+use App\Models\Setting;
 use App\Services\AI\InferenceExecutionService;
 use App\Services\Dataset\AugmentationPromptBuilderService;
 use App\Services\Dataset\ConversationPromptBuilderService;
-use App\Services\Dataset\DatasetSourceParsingService;
 use App\Services\Dataset\DatasetProgressService;
+use App\Services\Dataset\DatasetSourceParsingService;
 use App\Services\Dataset\DatasetValidationService;
 use App\Services\Dataset\HashDeduplicationService;
 use App\Services\Dataset\NegativeExampleService;
@@ -41,7 +43,7 @@ class GenerateDatasetBatchJob implements ShouldQueue
      */
     public function timeout(): int
     {
-        $llmTimeout = (int) \App\Models\Setting::get('llm_timeout', 90);
+        $llmTimeout = (int) Setting::get('llm_timeout', 90);
 
         return $llmTimeout * (self::MAX_DUPLICATE_ATTEMPTS + 2) + 60;
     }
@@ -625,7 +627,7 @@ class GenerateDatasetBatchJob implements ShouldQueue
      * @return array<int, array<string, mixed>>
      */
     private function loadSourceRows(
-        \App\Models\DatasetProject $project,
+        DatasetProject $project,
         DatasetSourceParsingService $parsingService,
     ): array {
         $sources = $project->sources()->orderBy('id')->get();

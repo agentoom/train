@@ -12,9 +12,9 @@ namespace App\DTOs;
 final class FailureAnalysisDTO
 {
     /**
-     * @param  array<string, array<string, mixed>>  $failuresByType   Failures grouped by issue category
-     * @param  array<string>                        $systemic         Issue categories detected as systemic
-     * @param  array<string, mixed>                 $rawEvaluatorScores
+     * @param  array<string, array<string, mixed>>  $failuresByType  Failures grouped by issue category
+     * @param  array<string>  $systemic  Issue categories detected as systemic
+     * @param  array<string, mixed>  $rawEvaluatorScores
      */
     public function __construct(
         public readonly array $failuresByType,

@@ -47,7 +47,7 @@ class DatasetList extends Component
         if ($projects->isEmpty()) {
             Flux::toast('Please select at least one dataset to export.', variant: 'warning');
 
-            return response()->streamDownload(fn () => print(''), 'datasets.json');
+            return response()->streamDownload(fn () => print (''), 'datasets.json');
         }
 
         $json = $exportService->exportMany($projects);

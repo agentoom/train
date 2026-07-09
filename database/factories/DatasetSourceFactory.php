@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\DatasetSource;
 use App\Models\DatasetProject;
+use App\Models\DatasetSource;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,8 +20,8 @@ class DatasetSourceFactory extends Factory
     {
         return [
             'dataset_project_id' => DatasetProject::factory(),
-            'original_filename' => $this->faker->word() . '.jsonl',
-            'file_path' => 'dataset-sources/' . $this->faker->uuid() . '.jsonl',
+            'original_filename' => $this->faker->word().'.jsonl',
+            'file_path' => 'dataset-sources/'.$this->faker->uuid().'.jsonl',
             'source_type' => 'jsonl',
             'parsed_schema' => null,
             'row_count' => $this->faker->numberBetween(10, 200),

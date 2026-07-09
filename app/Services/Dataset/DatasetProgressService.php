@@ -5,10 +5,11 @@ namespace App\Services\Dataset;
 use App\Enums\BatchStatus;
 use App\Enums\DatasetStatus;
 use App\Events\DatasetBatchCompleted;
-use App\Events\DatasetBatchStarted;
 use App\Events\DatasetBatchFailed;
+use App\Events\DatasetBatchStarted;
 use App\Events\DatasetGenerationCompleted;
 use App\Models\GenerationBatch;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 class DatasetProgressService
@@ -42,7 +43,7 @@ class DatasetProgressService
         return [BatchStatus::Completed->value, BatchStatus::Failed->value, BatchStatus::Cancelled->value];
     }
 
-    private function allBatchesTerminal(\Illuminate\Support\Collection $batches): bool
+    private function allBatchesTerminal(Collection $batches): bool
     {
         return $batches->every(
             fn (GenerationBatch $b) => in_array($b->status->value, $this->terminalStatuses())

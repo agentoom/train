@@ -10,7 +10,7 @@ class DatasetValidationService implements DatasetValidatorInterface
     /**
      * Validate a single row against an optional JSON schema.
      *
-     * @param  array<string, mixed>       $row
+     * @param  array<string, mixed>  $row
      * @param  array<string, mixed>|null  $schema
      */
     public function validate(array $payload, ?array $schema): bool
@@ -26,7 +26,7 @@ class DatasetValidationService implements DatasetValidatorInterface
      * Validate multiple rows, returning only valid ones.
      *
      * @param  array<int, array<string, mixed>>  $rows
-     * @param  array<string, mixed>|null         $schema
+     * @param  array<string, mixed>|null  $schema
      * @return array<int, array<string, mixed>>
      */
     public function filterValidRows(array $rows, ?array $schema = null): array

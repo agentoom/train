@@ -2,9 +2,9 @@
 
 namespace App\Livewire\Datasets;
 
+use App\Actions\Datasets\CancelDatasetGenerationAction;
 use App\Actions\Datasets\ContinueDatasetGenerationAction;
 use App\Actions\Datasets\EraseDatasetHistoryAction;
-use App\Actions\Datasets\CancelDatasetGenerationAction;
 use App\Actions\Datasets\RetryGenerationBatchAction;
 use App\Actions\Datasets\StartDatasetGenerationAction;
 use App\Enums\BatchStatus;
@@ -196,7 +196,7 @@ class DatasetDetail extends Component
     }
 
     /**
-     * Compute dataset quality metrics from batch and row data.
+     * Compute dataset quality metrics from batch and row data in a single aggregate query.
      *
      * @return array<string, mixed>
      */
@@ -206,49 +206,38 @@ class DatasetDetail extends Component
             return [];
         }
 
-        $totalGenerated = DatasetRow::where('dataset_version_id', $latestVersion->id)->count();
-        $duplicateCount = DatasetRow::where('dataset_version_id', $latestVersion->id)->where('is_duplicate', true)->count();
-        $invalidCount = DatasetRow::where('dataset_version_id', $latestVersion->id)->where('is_valid', false)->where('is_duplicate', false)->count();
+        $versionId = $latestVersion->id;
+
+        $stats = DatasetRow::where('dataset_version_id', $versionId)
+            ->selectRaw('
+                COUNT(*) as total_generated,
+                SUM(CASE WHEN is_duplicate = true THEN 1 ELSE 0 END) as duplicate_count,
+                SUM(CASE WHEN is_valid = false AND is_duplicate = false THEN 1 ELSE 0 END) as invalid_count,
+                SUM(CASE WHEN quality_score IS NOT NULL AND is_duplicate = false THEN 1 ELSE 0 END) as evaluated_rows,
+                SUM(CASE WHEN evaluation_failed = true THEN 1 ELSE 0 END) as evaluation_rejected,
+                SUM(CASE WHEN evaluation_failed = true AND jsonb_exists(quality_issues::jsonb, ?) THEN 1 ELSE 0 END) as evaluation_errors,
+                AVG(CASE WHEN quality_score IS NOT NULL AND is_duplicate = false AND evaluation_failed = false THEN quality_score ELSE NULL END) as avg_quality_score,
+                SUM(CASE WHEN critic_feedback IS NOT NULL AND is_duplicate = false THEN 1 ELSE 0 END) as criticised_rows,
+                SUM(CASE WHEN refined_by IS NOT NULL AND is_duplicate = false THEN 1 ELSE 0 END) as refined_rows,
+                SUM(CASE WHEN expected_behavior = ? THEN 1 ELSE 0 END) as negative_examples,
+                SUM(CASE WHEN messages IS NOT NULL AND is_duplicate = false THEN 1 ELSE 0 END) as conversation_rows,
+                AVG(CASE WHEN turn_count IS NOT NULL AND is_duplicate = false THEN turn_count ELSE NULL END) as avg_turn_count
+            ', ['evaluation_error', 'incorrect'])
+            ->first();
+
+        $totalGenerated = (int) $stats->total_generated;
+        $duplicateCount = (int) $stats->duplicate_count;
+        $invalidCount = (int) $stats->invalid_count;
         $validCount = $uniqueRows - $invalidCount;
+        $evaluatedRows = (int) $stats->evaluated_rows;
+        $evaluationRejected = (int) $stats->evaluation_rejected;
+        $evaluationErrors = (int) $stats->evaluation_errors;
 
         $duplicatesReplaced = $latestVersion->batches()->sum('regenerated');
         $targetCount = $latestVersion->record_count ?? $this->project->record_count;
 
-        // Evaluation metrics
-        $evaluatedRows = DatasetRow::where('dataset_version_id', $latestVersion->id)
-            ->whereNotNull('quality_score')
-            ->where('is_duplicate', false)
-            ->count();
-        $evaluationRejected = DatasetRow::where('dataset_version_id', $latestVersion->id)
-            ->where('evaluation_failed', true)
-            ->count();
-        $evaluationErrors = DatasetRow::where('dataset_version_id', $latestVersion->id)
-            ->where('evaluation_failed', true)
-            ->whereJsonContains('quality_issues', 'evaluation_error')
-            ->count();
-        $avgQualityScore = $evaluatedRows > 0
-            ? DatasetRow::where('dataset_version_id', $latestVersion->id)
-                ->whereNotNull('quality_score')
-                ->where('is_duplicate', false)
-                ->where('evaluation_failed', false)
-                ->avg('quality_score')
-            : null;
-
-        // Pipeline metrics
-        $criticisedRows = DatasetRow::where('dataset_version_id', $latestVersion->id)
-            ->whereNotNull('critic_feedback')
-            ->where('is_duplicate', false)
-            ->count();
-        $refinedRows = DatasetRow::where('dataset_version_id', $latestVersion->id)
-            ->whereNotNull('refined_by')
-            ->where('is_duplicate', false)
-            ->count();
-
-        // Negative example metrics
-        $negativeExamples = DatasetRow::where('dataset_version_id', $latestVersion->id)
-            ->where('expected_behavior', 'incorrect')
-            ->count();
-        $negativeByType = $negativeExamples > 0
+        // Negative examples by failure reason
+        $negativeByType = $stats->negative_examples > 0
             ? DatasetRow::where('dataset_version_id', $latestVersion->id)
                 ->where('expected_behavior', 'incorrect')
                 ->whereNotNull('failure_reason')
@@ -270,26 +259,8 @@ class DatasetDetail extends Component
             ? min(100.0, round(($uniqueRows / $targetCount) * 100, 1))
             : 0.0;
 
-        // Conversation metrics
-        $conversationRows = DatasetRow::where('dataset_version_id', $latestVersion->id)
-            ->whereNotNull('messages')
-            ->where('is_duplicate', false)
-            ->count();
-        $avgTurnCount = $conversationRows > 0
-            ? DatasetRow::where('dataset_version_id', $latestVersion->id)
-                ->whereNotNull('turn_count')
-                ->where('is_duplicate', false)
-                ->avg('turn_count')
-            : null;
-
-        // Augmentation metrics
         $sourceCount = $this->project->sources()->count();
-        $augmentedRows = $sourceCount > 0
-            ? DatasetRow::where('dataset_version_id', $latestVersion->id)
-                ->where('is_duplicate', false)
-                ->where('is_valid', true)
-                ->count()
-            : 0;
+        $augmentedRows = $sourceCount > 0 ? $validCount : 0;
 
         return [
             'total_generated' => $totalGenerated,
@@ -304,13 +275,13 @@ class DatasetDetail extends Component
             'evaluated_rows' => $evaluatedRows,
             'evaluation_rejected' => $evaluationRejected,
             'evaluation_errors' => $evaluationErrors,
-            'avg_quality_score' => $avgQualityScore !== null ? round((float) $avgQualityScore, 1) : null,
-            'criticised_rows' => $criticisedRows,
-            'refined_rows' => $refinedRows,
-            'negative_examples' => $negativeExamples,
+            'avg_quality_score' => $stats->avg_quality_score !== null ? round((float) $stats->avg_quality_score, 1) : null,
+            'criticised_rows' => (int) $stats->criticised_rows,
+            'refined_rows' => (int) $stats->refined_rows,
+            'negative_examples' => (int) $stats->negative_examples,
             'negative_by_type' => $negativeByType,
-            'conversation_rows' => $conversationRows,
-            'avg_turn_count' => $avgTurnCount !== null ? round((float) $avgTurnCount, 1) : null,
+            'conversation_rows' => (int) $stats->conversation_rows,
+            'avg_turn_count' => $stats->avg_turn_count !== null ? round((float) $stats->avg_turn_count, 1) : null,
             'source_count' => $sourceCount,
             'augmented_rows' => $augmentedRows,
         ];

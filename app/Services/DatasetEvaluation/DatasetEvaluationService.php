@@ -7,12 +7,12 @@ use App\DTOs\DatasetBatchDTO;
 use App\Models\DatasetEvaluationReport;
 use App\Models\DatasetReleaseVersion;
 use App\Models\DatasetVersion;
-use App\Services\DatasetEvaluation\Feedback\DatasetEvaluationFeedbackService;
 use App\Services\DatasetEvaluation\Evaluators\ConversationQualityEvaluator;
 use App\Services\DatasetEvaluation\Evaluators\DistributionDriftEvaluator;
 use App\Services\DatasetEvaluation\Evaluators\EdgeCaseEvaluator;
 use App\Services\DatasetEvaluation\Evaluators\NegativeRatioEvaluator;
 use App\Services\DatasetEvaluation\Evaluators\TaskPerformanceEvaluator;
+use App\Services\DatasetEvaluation\Feedback\DatasetEvaluationFeedbackService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -29,11 +29,11 @@ class DatasetEvaluationService
     public function __construct()
     {
         $this->pipeline = new EvaluationPipeline([
-            new TaskPerformanceEvaluator(),
-            new ConversationQualityEvaluator(),
-            new DistributionDriftEvaluator(),
-            new NegativeRatioEvaluator(),
-            new EdgeCaseEvaluator(),
+            new TaskPerformanceEvaluator,
+            new ConversationQualityEvaluator,
+            new DistributionDriftEvaluator,
+            new NegativeRatioEvaluator,
+            new EdgeCaseEvaluator,
         ]);
     }
 

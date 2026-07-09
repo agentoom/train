@@ -2,16 +2,16 @@
 
 use App\Enums\BatchStatus;
 use App\Enums\DatasetStatus;
+use App\Jobs\GenerateDatasetBatchJob;
+use App\Livewire\Datasets\DatasetDetail;
 use App\Models\DatasetProject;
+use App\Models\DatasetProjectLog;
+use App\Models\DatasetRow;
 use App\Models\DatasetVersion;
 use App\Models\GenerationBatch;
 use App\Models\User;
-use App\Models\DatasetProjectLog;
-use App\Models\DatasetRow;
-use App\Livewire\Datasets\DatasetDetail;
-use Livewire\Livewire;
 use Illuminate\Support\Facades\Queue;
-use App\Jobs\GenerateDatasetBatchJob;
+use Livewire\Livewire;
 
 test('it can erase generation history', function () {
     $user = User::factory()->create();
@@ -46,14 +46,14 @@ test('it can continue generation when more records are needed', function () {
     $project = DatasetProject::factory()->create([
         'user_id' => $user->id,
         'record_count' => 20,
-        'status' => DatasetStatus::Failed
+        'status' => DatasetStatus::Failed,
     ]);
 
     // Version only has 10 records planned
     $version = DatasetVersion::factory()->create([
         'dataset_project_id' => $project->id,
         'record_count' => 10,
-        'status' => DatasetStatus::Failed
+        'status' => DatasetStatus::Failed,
     ]);
 
     // One completed batch
@@ -62,7 +62,7 @@ test('it can continue generation when more records are needed', function () {
         'batch_number' => 1,
         'offset' => 0,
         'limit' => 5,
-        'status' => BatchStatus::Completed
+        'status' => BatchStatus::Completed,
     ]);
 
     // One failed batch
@@ -71,7 +71,7 @@ test('it can continue generation when more records are needed', function () {
         'batch_number' => 2,
         'offset' => 5,
         'limit' => 5,
-        'status' => BatchStatus::Failed
+        'status' => BatchStatus::Failed,
     ]);
 
     $this->actingAs($user);

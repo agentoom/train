@@ -71,6 +71,8 @@ class ProviderForm extends Component
             Flux::toast(variant: 'success', text: 'Provider created.');
         }
 
+        $this->apiKey = '';
+
         $this->redirect(route('providers.index'), navigate: true);
     }
 

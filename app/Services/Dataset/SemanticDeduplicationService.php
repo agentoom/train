@@ -87,7 +87,7 @@ class SemanticDeduplicationService
                     'query_by' => 'payload_text,payload_embedding',
                     'vector_query' => 'payload_embedding:([], k:10)',
                     'exclude_fields' => 'payload_embedding',
-                    'filter_by' => 'dataset_version_id:=' . $datasetVersionId . ' && is_duplicate:=0',
+                    'filter_by' => 'dataset_version_id:='.$datasetVersionId.' && is_duplicate:=0',
                     'per_page' => 10,
                 ])
                 ->raw();

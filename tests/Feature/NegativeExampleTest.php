@@ -4,6 +4,7 @@ use App\DTOs\GenerationResultDTO;
 use App\DTOs\NegativeExampleResultDTO;
 use App\Enums\BatchStatus;
 use App\Enums\DatasetStatus;
+use App\Jobs\GenerateDatasetBatchJob;
 use App\Models\AIProvider;
 use App\Models\DatasetProject;
 use App\Models\DatasetRow;
@@ -11,8 +12,20 @@ use App\Models\DatasetVersion;
 use App\Models\GenerationBatch;
 use App\Models\User;
 use App\Services\AI\InferenceExecutionService;
+use App\Services\Dataset\AugmentationPromptBuilderService;
+use App\Services\Dataset\ConversationPromptBuilderService;
 use App\Services\Dataset\DatasetProgressService;
+use App\Services\Dataset\DatasetSourceParsingService;
+use App\Services\Dataset\DatasetValidationService;
+use App\Services\Dataset\HashDeduplicationService;
 use App\Services\Dataset\NegativeExampleService;
+use App\Services\Dataset\PromptBuilderService;
+use App\Services\Dataset\SemanticDeduplicationService;
+use App\Services\Evaluation\DatasetEvaluationService;
+use App\Services\Pipeline\CriticService;
+use App\Services\Pipeline\RefinerService;
+use App\Support\Cost\CostEstimator;
+use App\Support\Json\JsonRepairer;
 
 // --- NegativeExampleService: negativeCountForBatch ---
 
@@ -126,7 +139,7 @@ test('NegativeExampleService returns null on inference exception', function () {
     ]);
 
     $mockInference = Mockery::mock(InferenceExecutionService::class);
-    $mockInference->shouldReceive('execute')->once()->andThrow(new \RuntimeException('API error'));
+    $mockInference->shouldReceive('execute')->once()->andThrow(new RuntimeException('API error'));
 
     $service = new NegativeExampleService($mockInference);
     $result = $service->generate(['tool' => 'correct_tool'], null, $project);
@@ -181,22 +194,22 @@ test('GenerateDatasetBatchJob generates negative examples when ratio is set', fu
     $mockInference->shouldReceive('execute')->andReturnValues([$generationResult, $negativeResult]);
     app()->instance(InferenceExecutionService::class, $mockInference);
 
-    (new \App\Jobs\GenerateDatasetBatchJob($batch->id))->handle(
+    (new GenerateDatasetBatchJob($batch->id))->handle(
         app(InferenceExecutionService::class),
-        app(\App\Services\Dataset\PromptBuilderService::class),
-        app(\App\Services\Dataset\ConversationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetValidationService::class),
+        app(PromptBuilderService::class),
+        app(ConversationPromptBuilderService::class),
+        app(DatasetValidationService::class),
         app(DatasetProgressService::class),
-        app(\App\Support\Json\JsonRepairer::class),
-        app(\App\Support\Cost\CostEstimator::class),
-        app(\App\Services\Dataset\HashDeduplicationService::class),
-        app(\App\Services\Dataset\SemanticDeduplicationService::class),
-        app(\App\Services\Evaluation\DatasetEvaluationService::class),
-        app(\App\Services\Pipeline\CriticService::class),
-        app(\App\Services\Pipeline\RefinerService::class),
-        app(\App\Services\Dataset\NegativeExampleService::class),
-        app(\App\Services\Dataset\AugmentationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetSourceParsingService::class),
+        app(JsonRepairer::class),
+        app(CostEstimator::class),
+        app(HashDeduplicationService::class),
+        app(SemanticDeduplicationService::class),
+        app(DatasetEvaluationService::class),
+        app(CriticService::class),
+        app(RefinerService::class),
+        app(NegativeExampleService::class),
+        app(AugmentationPromptBuilderService::class),
+        app(DatasetSourceParsingService::class),
     );
 
     $positiveRows = DatasetRow::where('generation_batch_id', $batch->id)
@@ -248,22 +261,22 @@ test('GenerateDatasetBatchJob skips negative generation when ratio is 0', functi
     $mockInference->shouldReceive('execute')->once()->andReturn($fakeResult);
     app()->instance(InferenceExecutionService::class, $mockInference);
 
-    (new \App\Jobs\GenerateDatasetBatchJob($batch->id))->handle(
+    (new GenerateDatasetBatchJob($batch->id))->handle(
         app(InferenceExecutionService::class),
-        app(\App\Services\Dataset\PromptBuilderService::class),
-        app(\App\Services\Dataset\ConversationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetValidationService::class),
+        app(PromptBuilderService::class),
+        app(ConversationPromptBuilderService::class),
+        app(DatasetValidationService::class),
         app(DatasetProgressService::class),
-        app(\App\Support\Json\JsonRepairer::class),
-        app(\App\Support\Cost\CostEstimator::class),
-        app(\App\Services\Dataset\HashDeduplicationService::class),
-        app(\App\Services\Dataset\SemanticDeduplicationService::class),
-        app(\App\Services\Evaluation\DatasetEvaluationService::class),
-        app(\App\Services\Pipeline\CriticService::class),
-        app(\App\Services\Pipeline\RefinerService::class),
-        app(\App\Services\Dataset\NegativeExampleService::class),
-        app(\App\Services\Dataset\AugmentationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetSourceParsingService::class),
+        app(JsonRepairer::class),
+        app(CostEstimator::class),
+        app(HashDeduplicationService::class),
+        app(SemanticDeduplicationService::class),
+        app(DatasetEvaluationService::class),
+        app(CriticService::class),
+        app(RefinerService::class),
+        app(NegativeExampleService::class),
+        app(AugmentationPromptBuilderService::class),
+        app(DatasetSourceParsingService::class),
     );
 
     $negativeRows = DatasetRow::where('generation_batch_id', $batch->id)
@@ -319,22 +332,22 @@ test('negative example rows have failure_reason and expected_behavior set', func
     $mockInference->shouldReceive('execute')->andReturnValues([$generationResult, $negativeResult]);
     app()->instance(InferenceExecutionService::class, $mockInference);
 
-    (new \App\Jobs\GenerateDatasetBatchJob($batch->id))->handle(
+    (new GenerateDatasetBatchJob($batch->id))->handle(
         app(InferenceExecutionService::class),
-        app(\App\Services\Dataset\PromptBuilderService::class),
-        app(\App\Services\Dataset\ConversationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetValidationService::class),
+        app(PromptBuilderService::class),
+        app(ConversationPromptBuilderService::class),
+        app(DatasetValidationService::class),
         app(DatasetProgressService::class),
-        app(\App\Support\Json\JsonRepairer::class),
-        app(\App\Support\Cost\CostEstimator::class),
-        app(\App\Services\Dataset\HashDeduplicationService::class),
-        app(\App\Services\Dataset\SemanticDeduplicationService::class),
-        app(\App\Services\Evaluation\DatasetEvaluationService::class),
-        app(\App\Services\Pipeline\CriticService::class),
-        app(\App\Services\Pipeline\RefinerService::class),
-        app(\App\Services\Dataset\NegativeExampleService::class),
-        app(\App\Services\Dataset\AugmentationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetSourceParsingService::class),
+        app(JsonRepairer::class),
+        app(CostEstimator::class),
+        app(HashDeduplicationService::class),
+        app(SemanticDeduplicationService::class),
+        app(DatasetEvaluationService::class),
+        app(CriticService::class),
+        app(RefinerService::class),
+        app(NegativeExampleService::class),
+        app(AugmentationPromptBuilderService::class),
+        app(DatasetSourceParsingService::class),
     );
 
     $negativeRow = DatasetRow::where('generation_batch_id', $batch->id)

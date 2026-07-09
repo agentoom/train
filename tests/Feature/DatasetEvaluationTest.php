@@ -2,12 +2,12 @@
 
 use App\DTOs\BatchEvaluationResultDTO;
 use App\DTOs\DatasetBatchDTO;
+use App\Models\AIProvider;
 use App\Models\DatasetEvaluationReport;
 use App\Models\DatasetProject;
 use App\Models\DatasetReleaseVersion;
 use App\Models\DatasetRow;
 use App\Models\DatasetVersion;
-use App\Models\AIProvider;
 use App\Models\User;
 use App\Services\DatasetEvaluation\DatasetEvaluationService;
 use App\Services\DatasetEvaluation\EvaluationPipeline;
@@ -40,7 +40,7 @@ function makeBatch(array $rows = [], array $metadata = [], ?DatasetVersion $vers
 // --- TaskPerformanceEvaluator ---
 
 test('TaskPerformanceEvaluator returns zero score for empty batch', function () {
-    $result = (new TaskPerformanceEvaluator())->evaluate(makeBatch());
+    $result = (new TaskPerformanceEvaluator)->evaluate(makeBatch());
 
     expect($result->evaluator)->toBe('task_performance')
         ->and($result->score)->toBe(0.0)
@@ -49,7 +49,7 @@ test('TaskPerformanceEvaluator returns zero score for empty batch', function () 
 
 test('TaskPerformanceEvaluator scores high for all-valid rows with quality scores', function () {
     $rows = array_fill(0, 5, ['is_valid' => true, 'evaluation_failed' => false, 'quality_score' => 90]);
-    $result = (new TaskPerformanceEvaluator())->evaluate(makeBatch($rows));
+    $result = (new TaskPerformanceEvaluator)->evaluate(makeBatch($rows));
 
     expect($result->passed)->toBeTrue()
         ->and($result->score)->toBeGreaterThan(70.0)
@@ -63,7 +63,7 @@ test('TaskPerformanceEvaluator penalises invalid and failed rows', function () {
         ['is_valid' => false, 'evaluation_failed' => true, 'quality_score' => 10],
         ['is_valid' => true,  'evaluation_failed' => false, 'quality_score' => 80],
     ];
-    $result = (new TaskPerformanceEvaluator())->evaluate(makeBatch($rows));
+    $result = (new TaskPerformanceEvaluator)->evaluate(makeBatch($rows));
 
     expect($result->score)->toBeLessThan(70.0);
 });
@@ -72,7 +72,7 @@ test('TaskPerformanceEvaluator penalises invalid and failed rows', function () {
 
 test('ConversationQualityEvaluator returns not_applicable when conversation_enabled is false', function () {
     $rows = [['payload' => ['question' => 'hello']], ['payload' => ['question' => 'world']]];
-    $result = (new ConversationQualityEvaluator())->evaluate(makeBatch($rows));
+    $result = (new ConversationQualityEvaluator)->evaluate(makeBatch($rows));
 
     expect($result->evaluator)->toBe('conversation_quality')
         ->and($result->status)->toBe('not_applicable')
@@ -88,7 +88,7 @@ test('ConversationQualityEvaluator scores well-structured conversations highly',
         'turn_count' => 2,
         'refined_by' => null,
     ]);
-    $result = (new ConversationQualityEvaluator())->evaluate(makeBatch($rows, ['conversation_enabled' => true]));
+    $result = (new ConversationQualityEvaluator)->evaluate(makeBatch($rows, ['conversation_enabled' => true]));
 
     expect($result->passed)->toBeTrue()
         ->and($result->details['conversational_rows'])->toBe(4)
@@ -99,7 +99,7 @@ test('ConversationQualityEvaluator scores well-structured conversations highly',
 
 test('DistributionDriftEvaluator scores high when no duplicates and no drift', function () {
     $rows = array_fill(0, 5, ['is_duplicate' => false, 'payload' => ['a' => 1, 'b' => 2]]);
-    $result = (new DistributionDriftEvaluator())->evaluate(makeBatch($rows, ['baseline_duplicate_rate' => 0.0]));
+    $result = (new DistributionDriftEvaluator)->evaluate(makeBatch($rows, ['baseline_duplicate_rate' => 0.0]));
 
     expect($result->evaluator)->toBe('distribution_drift')
         ->and($result->score)->toBeGreaterThanOrEqual(90.0)
@@ -108,7 +108,7 @@ test('DistributionDriftEvaluator scores high when no duplicates and no drift', f
 
 test('DistributionDriftEvaluator penalises high duplicate rate', function () {
     $rows = array_fill(0, 5, ['is_duplicate' => true, 'payload' => ['a' => 1]]);
-    $result = (new DistributionDriftEvaluator())->evaluate(makeBatch($rows));
+    $result = (new DistributionDriftEvaluator)->evaluate(makeBatch($rows));
 
     expect($result->score)->toBeLessThan(80.0)
         ->and($result->details['duplicate_rate'])->toBe(1.0);
@@ -116,7 +116,7 @@ test('DistributionDriftEvaluator penalises high duplicate rate', function () {
 
 test('DistributionDriftEvaluator detects drift from baseline', function () {
     $rows = array_fill(0, 10, ['is_duplicate' => false, 'payload' => ['x' => 1]]);
-    $result = (new DistributionDriftEvaluator())->evaluate(makeBatch($rows, ['baseline_duplicate_rate' => 0.5]));
+    $result = (new DistributionDriftEvaluator)->evaluate(makeBatch($rows, ['baseline_duplicate_rate' => 0.5]));
 
     expect($result->details['duplicate_drift'])->toBe(0.5);
 });
@@ -146,7 +146,7 @@ test('NegativeRatioEvaluator scores low when no negatives and min ratio required
 
 test('NegativeRatioEvaluator respects metadata overrides for ratio bounds', function () {
     $rows = array_fill(0, 10, ['failure_reason' => 'bad', 'payload' => []]);
-    $result = (new NegativeRatioEvaluator())->evaluate(makeBatch($rows, [
+    $result = (new NegativeRatioEvaluator)->evaluate(makeBatch($rows, [
         'negative_example_ratio' => 10,
         'min_negative_ratio' => 0.9,
         'max_negative_ratio' => 1.0,
@@ -159,7 +159,7 @@ test('NegativeRatioEvaluator respects metadata overrides for ratio bounds', func
 
 test('EdgeCaseEvaluator returns passing score for rows without similarity data', function () {
     $rows = array_fill(0, 5, ['payload' => ['x' => 1]]);
-    $result = (new EdgeCaseEvaluator())->evaluate(makeBatch($rows));
+    $result = (new EdgeCaseEvaluator)->evaluate(makeBatch($rows));
 
     expect($result->evaluator)->toBe('edge_case')
         ->and($result->passed)->toBeTrue();
@@ -167,7 +167,7 @@ test('EdgeCaseEvaluator returns passing score for rows without similarity data',
 
 test('EdgeCaseEvaluator rewards low similarity scores as edge cases', function () {
     $rows = array_fill(0, 5, ['source_similarity_score' => 0.1, 'critic_feedback' => 'needs work']);
-    $result = (new EdgeCaseEvaluator())->evaluate(makeBatch($rows));
+    $result = (new EdgeCaseEvaluator)->evaluate(makeBatch($rows));
 
     expect($result->details['edge_case_rate'])->toBe(1.0)
         ->and($result->details['avg_source_similarity'])->toBe(0.1);
@@ -185,11 +185,11 @@ test('EvaluationPipeline aggregates results from all evaluators', function () {
     ]);
 
     $pipeline = new EvaluationPipeline([
-        new TaskPerformanceEvaluator(),
-        new ConversationQualityEvaluator(),
-        new DistributionDriftEvaluator(),
-        new NegativeRatioEvaluator(),
-        new EdgeCaseEvaluator(),
+        new TaskPerformanceEvaluator,
+        new ConversationQualityEvaluator,
+        new DistributionDriftEvaluator,
+        new NegativeRatioEvaluator,
+        new EdgeCaseEvaluator,
     ]);
 
     $result = $pipeline->run(makeBatch($rows));
@@ -216,8 +216,8 @@ test('EvaluationPipeline rejects batch when overall score is below threshold', f
     ]);
 
     $pipeline = new EvaluationPipeline([
-        new TaskPerformanceEvaluator(),
-        new DistributionDriftEvaluator(),
+        new TaskPerformanceEvaluator,
+        new DistributionDriftEvaluator,
     ]);
 
     $result = $pipeline->run(makeBatch($rows));
@@ -242,7 +242,7 @@ test('DatasetEvaluationService evaluates a version and persists a report', funct
         'is_duplicate' => false,
     ]);
 
-    $service = new DatasetEvaluationService();
+    $service = new DatasetEvaluationService;
     $report = $service->evaluate($version);
 
     expect($report)->toBeInstanceOf(DatasetEvaluationReport::class)
@@ -272,7 +272,7 @@ test('DatasetEvaluationService compare returns baseline, candidate and improved 
     DatasetRow::factory()->count(3)->create(['dataset_version_id' => $baseline->id, 'is_valid' => true, 'is_duplicate' => false]);
     DatasetRow::factory()->count(3)->create(['dataset_version_id' => $candidate->id, 'is_valid' => true, 'is_duplicate' => false]);
 
-    $service = new DatasetEvaluationService();
+    $service = new DatasetEvaluationService;
     $comparison = $service->compare($baseline, $candidate);
 
     expect($comparison)->toHaveKeys(['baseline', 'candidate', 'improved'])
@@ -297,7 +297,7 @@ test('DatasetEvaluationService release creates a DatasetReleaseVersion for passi
         'duplicate_rate' => 0.0,
     ]);
 
-    $service = new DatasetEvaluationService();
+    $service = new DatasetEvaluationService;
     $release = $service->release($report, 'v1.0.0', 'First stable release');
 
     expect($release)->toBeInstanceOf(DatasetReleaseVersion::class)
@@ -327,7 +327,7 @@ test('DatasetEvaluationService release throws when report did not pass', functio
         'duplicate_rate' => 0.0,
     ]);
 
-    $service = new DatasetEvaluationService();
+    $service = new DatasetEvaluationService;
 
     expect(fn () => $service->release($report, 'v0.1.0'))->toThrow(RuntimeException::class);
 });

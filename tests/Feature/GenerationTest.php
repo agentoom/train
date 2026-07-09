@@ -6,6 +6,9 @@ use App\Actions\Datasets\StartDatasetGenerationAction;
 use App\DTOs\GenerationResultDTO;
 use App\Enums\BatchStatus;
 use App\Enums\DatasetStatus;
+use App\Events\DatasetBatchCompleted;
+use App\Events\DatasetGenerationCompleted;
+use App\Events\DatasetGenerationStarted;
 use App\Jobs\GenerateDatasetBatchJob;
 use App\Livewire\Datasets\DatasetDetail;
 use App\Livewire\Datasets\DatasetProgress;
@@ -17,8 +20,21 @@ use App\Models\GenerationBatch;
 use App\Models\GenerationUsage;
 use App\Models\User;
 use App\Services\AI\InferenceExecutionService;
-use App\Services\Dataset\GenerationBatchingService;
+use App\Services\Dataset\AugmentationPromptBuilderService;
+use App\Services\Dataset\ConversationPromptBuilderService;
 use App\Services\Dataset\DatasetProgressService;
+use App\Services\Dataset\DatasetSourceParsingService;
+use App\Services\Dataset\DatasetValidationService;
+use App\Services\Dataset\GenerationBatchingService;
+use App\Services\Dataset\HashDeduplicationService;
+use App\Services\Dataset\NegativeExampleService;
+use App\Services\Dataset\PromptBuilderService;
+use App\Services\Dataset\SemanticDeduplicationService;
+use App\Services\Evaluation\DatasetEvaluationService;
+use App\Services\Pipeline\CriticService;
+use App\Services\Pipeline\RefinerService;
+use App\Support\Cost\CostEstimator;
+use App\Support\Json\JsonRepairer;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
@@ -147,20 +163,20 @@ test('GenerateDatasetBatchJob persists rows and usage record', function () {
 
     (new GenerateDatasetBatchJob($batch->id))->handle(
         app(InferenceExecutionService::class),
-        app(\App\Services\Dataset\PromptBuilderService::class),
-        app(\App\Services\Dataset\ConversationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetValidationService::class),
+        app(PromptBuilderService::class),
+        app(ConversationPromptBuilderService::class),
+        app(DatasetValidationService::class),
         app(DatasetProgressService::class),
-        app(\App\Support\Json\JsonRepairer::class),
-        app(\App\Support\Cost\CostEstimator::class),
-        app(\App\Services\Dataset\HashDeduplicationService::class),
-        app(\App\Services\Dataset\SemanticDeduplicationService::class),
-        app(\App\Services\Evaluation\DatasetEvaluationService::class),
-        app(\App\Services\Pipeline\CriticService::class),
-        app(\App\Services\Pipeline\RefinerService::class),
-        app(\App\Services\Dataset\NegativeExampleService::class),
-        app(\App\Services\Dataset\AugmentationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetSourceParsingService::class),
+        app(JsonRepairer::class),
+        app(CostEstimator::class),
+        app(HashDeduplicationService::class),
+        app(SemanticDeduplicationService::class),
+        app(DatasetEvaluationService::class),
+        app(CriticService::class),
+        app(RefinerService::class),
+        app(NegativeExampleService::class),
+        app(AugmentationPromptBuilderService::class),
+        app(DatasetSourceParsingService::class),
     );
 
     expect(DatasetRow::where('generation_batch_id', $batch->id)->where('is_duplicate', false)->count())->toBe(2);
@@ -188,25 +204,25 @@ test('GenerateDatasetBatchJob marks batch and project failed on exception', func
     ]);
 
     $mockInference = Mockery::mock(InferenceExecutionService::class);
-    $mockInference->shouldReceive('execute')->once()->andThrow(new \RuntimeException('API error'));
+    $mockInference->shouldReceive('execute')->once()->andThrow(new RuntimeException('API error'));
     app()->instance(InferenceExecutionService::class, $mockInference);
 
     (new GenerateDatasetBatchJob($batch->id))->handle(
         app(InferenceExecutionService::class),
-        app(\App\Services\Dataset\PromptBuilderService::class),
-        app(\App\Services\Dataset\ConversationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetValidationService::class),
+        app(PromptBuilderService::class),
+        app(ConversationPromptBuilderService::class),
+        app(DatasetValidationService::class),
         app(DatasetProgressService::class),
-        app(\App\Support\Json\JsonRepairer::class),
-        app(\App\Support\Cost\CostEstimator::class),
-        app(\App\Services\Dataset\HashDeduplicationService::class),
-        app(\App\Services\Dataset\SemanticDeduplicationService::class),
-        app(\App\Services\Evaluation\DatasetEvaluationService::class),
-        app(\App\Services\Pipeline\CriticService::class),
-        app(\App\Services\Pipeline\RefinerService::class),
-        app(\App\Services\Dataset\NegativeExampleService::class),
-        app(\App\Services\Dataset\AugmentationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetSourceParsingService::class),
+        app(JsonRepairer::class),
+        app(CostEstimator::class),
+        app(HashDeduplicationService::class),
+        app(SemanticDeduplicationService::class),
+        app(DatasetEvaluationService::class),
+        app(CriticService::class),
+        app(RefinerService::class),
+        app(NegativeExampleService::class),
+        app(AugmentationPromptBuilderService::class),
+        app(DatasetSourceParsingService::class),
     );
 
     expect($batch->fresh()->status)->toBe(BatchStatus::Failed)
@@ -218,7 +234,7 @@ test('GenerateDatasetBatchJob updates status to failed via failed method', funct
     $batch = GenerationBatch::factory()->create(['status' => BatchStatus::Running]);
 
     $job = new GenerateDatasetBatchJob($batch->id);
-    $job->failed(new \Exception('Direct failure'));
+    $job->failed(new Exception('Direct failure'));
 
     expect($batch->fresh()->status)->toBe(BatchStatus::Failed)
         ->and($batch->fresh()->error_message)->toBe('Direct failure');
@@ -233,20 +249,20 @@ test('GenerateDatasetBatchJob is idempotent for completed batches', function () 
 
     (new GenerateDatasetBatchJob($batch->id))->handle(
         app(InferenceExecutionService::class),
-        app(\App\Services\Dataset\PromptBuilderService::class),
-        app(\App\Services\Dataset\ConversationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetValidationService::class),
+        app(PromptBuilderService::class),
+        app(ConversationPromptBuilderService::class),
+        app(DatasetValidationService::class),
         app(DatasetProgressService::class),
-        app(\App\Support\Json\JsonRepairer::class),
-        app(\App\Support\Cost\CostEstimator::class),
-        app(\App\Services\Dataset\HashDeduplicationService::class),
-        app(\App\Services\Dataset\SemanticDeduplicationService::class),
-        app(\App\Services\Evaluation\DatasetEvaluationService::class),
-        app(\App\Services\Pipeline\CriticService::class),
-        app(\App\Services\Pipeline\RefinerService::class),
-        app(\App\Services\Dataset\NegativeExampleService::class),
-        app(\App\Services\Dataset\AugmentationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetSourceParsingService::class),
+        app(JsonRepairer::class),
+        app(CostEstimator::class),
+        app(HashDeduplicationService::class),
+        app(SemanticDeduplicationService::class),
+        app(DatasetEvaluationService::class),
+        app(CriticService::class),
+        app(RefinerService::class),
+        app(NegativeExampleService::class),
+        app(AugmentationPromptBuilderService::class),
+        app(DatasetSourceParsingService::class),
     );
 
     expect($batch->fresh()->status)->toBe(BatchStatus::Completed);
@@ -290,8 +306,8 @@ test('DatasetProgressService marks all batches completed and fires completion ev
     expect($version->fresh()->status)->toBe(DatasetStatus::Completed);
     expect($project->fresh()->status)->toBe(DatasetStatus::Completed);
 
-    Event::assertDispatched(\App\Events\DatasetBatchCompleted::class);
-    Event::assertDispatched(\App\Events\DatasetGenerationCompleted::class);
+    Event::assertDispatched(DatasetBatchCompleted::class);
+    Event::assertDispatched(DatasetGenerationCompleted::class);
 });
 
 test('DatasetProgressService cancelPendingBatches only cancels pending', function () {
@@ -462,9 +478,9 @@ test('full generation happy path: version created, batches executed, rows and us
     app()->instance(InferenceExecutionService::class, $mockInference);
 
     Event::fake([
-        \App\Events\DatasetGenerationStarted::class,
-        \App\Events\DatasetBatchCompleted::class,
-        \App\Events\DatasetGenerationCompleted::class,
+        DatasetGenerationStarted::class,
+        DatasetBatchCompleted::class,
+        DatasetGenerationCompleted::class,
     ]);
 
     // Execute: start generation with batch size 2 → 2 batches
@@ -501,9 +517,9 @@ test('full generation happy path: version created, batches executed, rows and us
     expect($project->fresh()->status)->toBe(DatasetStatus::Completed);
 
     // Assert events fired
-    Event::assertDispatched(\App\Events\DatasetGenerationStarted::class);
-    Event::assertDispatched(\App\Events\DatasetBatchCompleted::class);
-    Event::assertDispatched(\App\Events\DatasetGenerationCompleted::class);
+    Event::assertDispatched(DatasetGenerationStarted::class);
+    Event::assertDispatched(DatasetBatchCompleted::class);
+    Event::assertDispatched(DatasetGenerationCompleted::class);
 });
 
 // --- Reproducibility: generation_seed auto-generated ---

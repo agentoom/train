@@ -64,7 +64,7 @@ class DatasetRow extends Model
 
     public function searchableAs(): string
     {
-        return 'dataset_rows_v' . ($this->dataset_version_id ?? 'unknown');
+        return 'dataset_rows_v'.($this->dataset_version_id ?? 'unknown');
     }
 
     /**

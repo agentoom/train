@@ -24,7 +24,7 @@ test('EvaluationPromptBuilderService builds a prompt with row and schema', funct
         'system_prompt' => 'Generate customer support data.',
     ]);
 
-    $builder = new EvaluationPromptBuilderService();
+    $builder = new EvaluationPromptBuilderService;
     $prompt = $builder->build(
         row: ['question' => 'How do I return an item?', 'answer' => 'Visit our returns page.'],
         schema: ['question' => 'string', 'answer' => 'string'],
@@ -49,7 +49,7 @@ test('EvaluationPromptBuilderService falls back to project model when evaluation
         'evaluation_model' => null,
     ]);
 
-    $builder = new EvaluationPromptBuilderService();
+    $builder = new EvaluationPromptBuilderService;
     $prompt = $builder->build(row: ['text' => 'hello'], schema: null, project: $project);
 
     expect($prompt->model)->toBe('claude-3-haiku');
@@ -79,7 +79,7 @@ test('DatasetEvaluationService parses a valid JSON evaluation response', functio
     $mockInference = Mockery::mock(InferenceExecutionService::class);
     $mockInference->shouldReceive('execute')->once()->andReturn($fakeResult);
 
-    $service = new DatasetEvaluationService($mockInference, new EvaluationPromptBuilderService());
+    $service = new DatasetEvaluationService($mockInference, new EvaluationPromptBuilderService);
     $result = $service->evaluate(['text' => 'hello'], null, $project);
 
     expect($result)->toBeInstanceOf(EvaluationResultDTO::class)
@@ -109,7 +109,7 @@ test('DatasetEvaluationService strips markdown fences from response', function (
     $mockInference = Mockery::mock(InferenceExecutionService::class);
     $mockInference->shouldReceive('execute')->once()->andReturn($fakeResult);
 
-    $service = new DatasetEvaluationService($mockInference, new EvaluationPromptBuilderService());
+    $service = new DatasetEvaluationService($mockInference, new EvaluationPromptBuilderService);
     $result = $service->evaluate(['text' => 'test'], null, $project);
 
     expect($result->score)->toBe(90);
@@ -136,7 +136,7 @@ test('DatasetEvaluationService returns parse_error result on invalid JSON', func
     $mockInference = Mockery::mock(InferenceExecutionService::class);
     $mockInference->shouldReceive('execute')->once()->andReturn($fakeResult);
 
-    $service = new DatasetEvaluationService($mockInference, new EvaluationPromptBuilderService());
+    $service = new DatasetEvaluationService($mockInference, new EvaluationPromptBuilderService);
     $result = $service->evaluate(['text' => 'test'], null, $project);
 
     expect($result->score)->toBe(0)
@@ -157,7 +157,7 @@ test('DatasetEvaluationService returns null when evaluation is disabled', functi
     $mockInference = Mockery::mock(InferenceExecutionService::class);
     $mockInference->shouldNotReceive('execute');
 
-    $service = new DatasetEvaluationService($mockInference, new EvaluationPromptBuilderService());
+    $service = new DatasetEvaluationService($mockInference, new EvaluationPromptBuilderService);
     $result = $service->evaluate(['text' => 'hello'], null, $project);
 
     expect($result)->toBeNull();
@@ -173,7 +173,7 @@ test('DatasetEvaluationService passes() returns true when score meets threshold'
     ]);
 
     $mockInference = Mockery::mock(InferenceExecutionService::class);
-    $service = new DatasetEvaluationService($mockInference, new EvaluationPromptBuilderService());
+    $service = new DatasetEvaluationService($mockInference, new EvaluationPromptBuilderService);
 
     $passing = new EvaluationResultDTO(score: 75, reasoning: 'OK', issues: []);
     $failing = new EvaluationResultDTO(score: 74, reasoning: 'Low', issues: ['too_generic']);

@@ -60,8 +60,8 @@ class PromptBuilderService
     }
 
     /**
-     * @param array<string, mixed>|null $schema
-     * @param array<string, mixed>|null $diversityDimensions
+     * @param  array<string, mixed>|null  $schema
+     * @param  array<string, mixed>|null  $diversityDimensions
      */
     private function buildUserPrompt(
         ?array $schema,
@@ -100,7 +100,7 @@ class PromptBuilderService
 
         // Schema
         if ($schema) {
-            $parts[] = "Each entry MUST match this JSON schema exactly:\n" . json_encode($schema, JSON_PRETTY_PRINT);
+            $parts[] = "Each entry MUST match this JSON schema exactly:\n".json_encode($schema, JSON_PRETTY_PRINT);
         }
 
         // Anti-duplication and uniqueness instructions
@@ -113,7 +113,7 @@ class PromptBuilderService
 
         // Strategy
         if ($strategy && $strategy !== 'default') {
-            $parts[] = 'Generation strategy: ' . $strategy;
+            $parts[] = 'Generation strategy: '.$strategy;
         }
 
         // Seed context for reproducibility
@@ -141,11 +141,11 @@ class PromptBuilderService
             default => '- Uniqueness level: Balanced. Good diversity while maintaining realism and coherence.',
         };
 
-        return $base . "\n" . $extra;
+        return $base."\n".$extra;
     }
 
     /**
-     * @param array<string, mixed> $diversityDimensions
+     * @param  array<string, mixed>  $diversityDimensions
      */
     private function buildDiversityInstructions(array $diversityDimensions, int $batchIndex, int $totalBatches): string
     {
@@ -156,7 +156,7 @@ class PromptBuilderService
             if (is_array($values) && ! empty($values)) {
                 // Rotate preferred values based on batch index to avoid overrepresentation
                 $preferred = $this->getPreferredValuesForBatch($values, $batchIndex, $totalBatches);
-                $valueList = implode(', ', array_map(fn ($v) => '"' . $v . '"', $preferred));
+                $valueList = implode(', ', array_map(fn ($v) => '"'.$v.'"', $preferred));
                 $lines[] = "- {$dimension}: favor {$valueList} in this batch";
             } elseif (is_string($values)) {
                 $lines[] = "- {$dimension}: {$values}";
@@ -171,7 +171,7 @@ class PromptBuilderService
     /**
      * Rotate dimension values across batches for balanced distribution.
      *
-     * @param array<mixed> $values
+     * @param  array<mixed>  $values
      * @return array<mixed>
      */
     private function getPreferredValuesForBatch(array $values, int $batchIndex, int $totalBatches): array
@@ -192,6 +192,6 @@ class PromptBuilderService
      */
     private function deriveBatchSeed(string $projectSeed, int $batchIndex): string
     {
-        return substr(hash('sha256', $projectSeed . ':batch:' . $batchIndex), 0, 16);
+        return substr(hash('sha256', $projectSeed.':batch:'.$batchIndex), 0, 16);
     }
 }

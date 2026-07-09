@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Components;
 
+use App\Models\AIProvider;
+use Illuminate\View\View;
 use Livewire\Component;
 
 class ProviderSelector extends Component
@@ -15,14 +17,14 @@ class ProviderSelector extends Component
 
     public function mount(): void
     {
-        $this->providers = \App\Models\AIProvider::where('user_id', auth()->id())
+        $this->providers = AIProvider::where('user_id', auth()->id())
             ->where('is_enabled', true)
             ->orderBy('label')
             ->get(['id', 'label', 'type'])
             ->toArray();
     }
 
-    public function render(): \Illuminate\View\View
+    public function render(): View
     {
         return view('livewire.components.provider-selector');
     }

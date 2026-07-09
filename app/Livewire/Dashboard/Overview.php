@@ -6,6 +6,7 @@ use App\Enums\DatasetStatus;
 use App\Models\AIProvider;
 use App\Models\DatasetProject;
 use App\Models\GenerationUsage;
+use App\Services\AI\ProviderHealthCheckService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Livewire\Attributes\Title;
@@ -37,10 +38,19 @@ class Overview extends Component
             ->where('is_enabled', true)
             ->get();
 
-        $providerHealth = $providers->map(fn (AIProvider $provider) => [
-            'label' => $provider->label,
-            'type'  => $provider->type->value,
-        ]);
+        $providerHealth = $providers->map(function (AIProvider $provider) {
+            $health = ['label' => $provider->label, 'type' => $provider->type->value, 'healthy' => null];
+
+            try {
+                $result = app(ProviderHealthCheckService::class)->check($provider);
+                $health['healthy'] = $result->healthy;
+                $health['latency_ms'] = $result->latencyMs;
+            } catch (\Throwable) {
+                $health['healthy'] = false;
+            }
+
+            return $health;
+        });
 
         $recentProjects = DatasetProject::where('user_id', $userId)
             ->with('aiProvider')
@@ -49,13 +59,13 @@ class Overview extends Component
             ->get();
 
         return view('livewire.dashboard.overview', [
-            'runningJobs'       => $runningJobs,
+            'runningJobs' => $runningJobs,
             'completedDatasets' => $completedDatasets,
-            'totalDatasets'     => $totalDatasets,
-            'todayTokens'       => (int) ($todayUsage->total_tokens ?? 0),
-            'todayCost'         => (float) ($todayUsage->total_cost ?? 0.0),
-            'providerHealth'    => $providerHealth,
-            'recentProjects'    => $recentProjects,
+            'totalDatasets' => $totalDatasets,
+            'todayTokens' => (int) ($todayUsage->total_tokens ?? 0),
+            'todayCost' => (float) ($todayUsage->total_cost ?? 0.0),
+            'providerHealth' => $providerHealth,
+            'recentProjects' => $recentProjects,
         ])->layout('layouts.app', ['title' => __('Dashboard')]);
     }
 }

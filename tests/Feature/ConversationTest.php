@@ -3,11 +3,17 @@
 use App\DTOs\GenerationResultDTO;
 use App\Enums\BatchStatus;
 use App\Jobs\GenerateDatasetBatchJob;
+use App\Models\AIProvider;
+use App\Models\DatasetProject;
 use App\Models\DatasetRow;
+use App\Models\DatasetVersion;
 use App\Models\GenerationBatch;
 use App\Services\AI\InferenceExecutionService;
+use App\Services\Dataset\AugmentationPromptBuilderService;
 use App\Services\Dataset\ConversationPromptBuilderService;
 use App\Services\Dataset\DatasetProgressService;
+use App\Services\Dataset\DatasetSourceParsingService;
+use App\Services\Dataset\DatasetValidationService;
 use App\Services\Dataset\HashDeduplicationService;
 use App\Services\Dataset\NegativeExampleService;
 use App\Services\Dataset\PromptBuilderService;
@@ -15,11 +21,13 @@ use App\Services\Dataset\SemanticDeduplicationService;
 use App\Services\Evaluation\DatasetEvaluationService;
 use App\Services\Pipeline\CriticService;
 use App\Services\Pipeline\RefinerService;
+use App\Support\Cost\CostEstimator;
+use App\Support\Json\JsonRepairer;
 
 // ─── ConversationPromptBuilderService ────────────────────────────────────────
 
 test('ConversationPromptBuilderService builds prompt with messages format instructions', function () {
-    $project = \App\Models\DatasetProject::factory()->create([
+    $project = DatasetProject::factory()->create([
         'conversation_enabled' => true,
         'conversation_type' => 'assistant_chat',
         'min_turns' => 2,
@@ -38,7 +46,7 @@ test('ConversationPromptBuilderService builds prompt with messages format instru
 });
 
 test('ConversationPromptBuilderService includes tool usage instructions for tool_usage type', function () {
-    $project = \App\Models\DatasetProject::factory()->create([
+    $project = DatasetProject::factory()->create([
         'conversation_enabled' => true,
         'conversation_type' => 'tool_usage',
         'min_turns' => 2,
@@ -55,7 +63,7 @@ test('ConversationPromptBuilderService includes tool usage instructions for tool
 });
 
 test('ConversationPromptBuilderService includes branching instructions when enabled', function () {
-    $project = \App\Models\DatasetProject::factory()->create([
+    $project = DatasetProject::factory()->create([
         'conversation_enabled' => true,
         'conversation_type' => 'assistant_chat',
         'min_turns' => 2,
@@ -69,7 +77,7 @@ test('ConversationPromptBuilderService includes branching instructions when enab
 });
 
 test('ConversationPromptBuilderService does not include branching when disabled', function () {
-    $project = \App\Models\DatasetProject::factory()->create([
+    $project = DatasetProject::factory()->create([
         'conversation_enabled' => true,
         'conversation_type' => 'assistant_chat',
         'min_turns' => 2,
@@ -83,7 +91,7 @@ test('ConversationPromptBuilderService does not include branching when disabled'
 });
 
 test('ConversationPromptBuilderService buildFromVersion uses version snapshot', function () {
-    $project = \App\Models\DatasetProject::factory()->create([
+    $project = DatasetProject::factory()->create([
         'conversation_enabled' => true,
         'conversation_type' => 'support_workflow',
         'min_turns' => 3,
@@ -91,7 +99,7 @@ test('ConversationPromptBuilderService buildFromVersion uses version snapshot', 
         'branching_enabled' => false,
     ]);
 
-    $version = \App\Models\DatasetVersion::factory()->create([
+    $version = DatasetVersion::factory()->create([
         'dataset_project_id' => $project->id,
         'system_prompt_snapshot' => 'You are a support agent.',
         'record_count' => 5,
@@ -124,31 +132,31 @@ function runConversationJob(GenerationBatch $batch, array $rows): void
         app(InferenceExecutionService::class),
         app(PromptBuilderService::class),
         app(ConversationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetValidationService::class),
+        app(DatasetValidationService::class),
         app(DatasetProgressService::class),
-        app(\App\Support\Json\JsonRepairer::class),
-        app(\App\Support\Cost\CostEstimator::class),
+        app(JsonRepairer::class),
+        app(CostEstimator::class),
         app(HashDeduplicationService::class),
         app(SemanticDeduplicationService::class),
         app(DatasetEvaluationService::class),
         app(CriticService::class),
         app(RefinerService::class),
         app(NegativeExampleService::class),
-        app(\App\Services\Dataset\AugmentationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetSourceParsingService::class),
+        app(AugmentationPromptBuilderService::class),
+        app(DatasetSourceParsingService::class),
     );
 }
 
 test('GenerateDatasetBatchJob stores messages and turn_count in conversation mode', function () {
-    $project = \App\Models\DatasetProject::factory()->create([
+    $project = DatasetProject::factory()->create([
         'conversation_enabled' => true,
         'conversation_type' => 'assistant_chat',
         'min_turns' => 2,
         'max_turns' => 4,
-        'ai_provider_id' => \App\Models\AIProvider::factory()->create()->id,
+        'ai_provider_id' => AIProvider::factory()->create()->id,
     ]);
 
-    $version = \App\Models\DatasetVersion::factory()->create(['dataset_project_id' => $project->id]);
+    $version = DatasetVersion::factory()->create(['dataset_project_id' => $project->id]);
     $batch = GenerationBatch::factory()->create([
         'dataset_version_id' => $version->id,
         'batch_number' => 1,
@@ -183,12 +191,12 @@ test('GenerateDatasetBatchJob stores messages and turn_count in conversation mod
 });
 
 test('GenerateDatasetBatchJob skips conversation rows without messages key', function () {
-    $project = \App\Models\DatasetProject::factory()->create([
+    $project = DatasetProject::factory()->create([
         'conversation_enabled' => true,
-        'ai_provider_id' => \App\Models\AIProvider::factory()->create()->id,
+        'ai_provider_id' => AIProvider::factory()->create()->id,
     ]);
 
-    $version = \App\Models\DatasetVersion::factory()->create(['dataset_project_id' => $project->id]);
+    $version = DatasetVersion::factory()->create(['dataset_project_id' => $project->id]);
     $batch = GenerationBatch::factory()->create([
         'dataset_version_id' => $version->id,
         'batch_number' => 1,
@@ -212,13 +220,13 @@ test('GenerateDatasetBatchJob skips conversation rows without messages key', fun
 });
 
 test('GenerateDatasetBatchJob deduplicates conversations by messages hash', function () {
-    $project = \App\Models\DatasetProject::factory()->create([
+    $project = DatasetProject::factory()->create([
         'conversation_enabled' => true,
         'replacement_generation_enabled' => false,
-        'ai_provider_id' => \App\Models\AIProvider::factory()->create()->id,
+        'ai_provider_id' => AIProvider::factory()->create()->id,
     ]);
 
-    $version = \App\Models\DatasetVersion::factory()->create(['dataset_project_id' => $project->id]);
+    $version = DatasetVersion::factory()->create(['dataset_project_id' => $project->id]);
     $batch = GenerationBatch::factory()->create([
         'dataset_version_id' => $version->id,
         'batch_number' => 1,
@@ -242,12 +250,12 @@ test('GenerateDatasetBatchJob deduplicates conversations by messages hash', func
 });
 
 test('GenerateDatasetBatchJob uses normal prompt builder when conversation_enabled is false', function () {
-    $project = \App\Models\DatasetProject::factory()->create([
+    $project = DatasetProject::factory()->create([
         'conversation_enabled' => false,
-        'ai_provider_id' => \App\Models\AIProvider::factory()->create()->id,
+        'ai_provider_id' => AIProvider::factory()->create()->id,
     ]);
 
-    $version = \App\Models\DatasetVersion::factory()->create(['dataset_project_id' => $project->id]);
+    $version = DatasetVersion::factory()->create(['dataset_project_id' => $project->id]);
     $batch = GenerationBatch::factory()->create([
         'dataset_version_id' => $version->id,
         'batch_number' => 1,

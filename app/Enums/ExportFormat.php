@@ -20,18 +20,18 @@ enum ExportFormat: string
     public function mimeType(): string
     {
         return match ($this) {
-            self::Json  => 'application/json',
+            self::Json => 'application/json',
             self::Csv => 'text/csv',
-            default     => 'application/jsonl',
+            default => 'application/jsonl',
         };
     }
 
     public function extension(): string
     {
         return match ($this) {
-            self::Json  => 'json',
-            self::Csv   => 'csv',
-            default     => 'jsonl',
+            self::Json => 'json',
+            self::Csv => 'csv',
+            default => 'jsonl',
         };
     }
 
@@ -48,15 +48,15 @@ enum ExportFormat: string
     public function label(): string
     {
         return match ($this) {
-            self::Json              => 'JSON',
-            self::Jsonl             => 'JSONL',
-            self::Csv               => 'CSV',
-            self::OpenAI            => 'OpenAI Fine-Tuning',
-            self::Anthropic         => 'Anthropic',
-            self::HuggingFace       => 'HuggingFace',
-            self::Axolotl           => 'Axolotl',
-            self::Unsloth           => 'Unsloth',
-            self::LlamaFactory      => 'LlamaFactory',
+            self::Json => 'JSON',
+            self::Jsonl => 'JSONL',
+            self::Csv => 'CSV',
+            self::OpenAI => 'OpenAI Fine-Tuning',
+            self::Anthropic => 'Anthropic',
+            self::HuggingFace => 'HuggingFace',
+            self::Axolotl => 'Axolotl',
+            self::Unsloth => 'Unsloth',
+            self::LlamaFactory => 'LlamaFactory',
             self::GenericToolCalling => 'Generic Tool Calling',
         };
     }

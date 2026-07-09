@@ -68,7 +68,7 @@ class ConversationPromptBuilderService
     }
 
     /**
-     * @param array<string, mixed>|null $schema
+     * @param  array<string, mixed>|null  $schema
      */
     private function buildUserPrompt(
         ?array $schema,
@@ -152,7 +152,7 @@ TOOL USAGE EXAMPLE:
         }
 
         if ($schema) {
-            $parts[] = 'ADDITIONAL SCHEMA CONSTRAINTS for each message object:' . "\n" . json_encode($schema, JSON_PRETTY_PRINT);
+            $parts[] = 'ADDITIONAL SCHEMA CONSTRAINTS for each message object:'."\n".json_encode($schema, JSON_PRETTY_PRINT);
         }
 
         $parts[] = 'UNIQUENESS REQUIREMENTS:

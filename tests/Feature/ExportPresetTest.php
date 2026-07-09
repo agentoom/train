@@ -4,6 +4,7 @@ use App\Enums\ExportFormat;
 use App\Models\DatasetProject;
 use App\Models\DatasetRow;
 use App\Models\DatasetVersion;
+use App\Models\GenerationBatch;
 use App\Services\Dataset\DatasetExportService;
 use App\Services\Export\ExportPresetTransformer;
 
@@ -181,7 +182,7 @@ test('Unsloth preset produces same output as OpenAI preset', function () {
     $transformer = app(ExportPresetTransformer::class);
     $row = makeRow(['user' => 'What is AI?', 'assistant' => 'Artificial Intelligence.']);
 
-    $openai  = $transformer->transform($row, ExportFormat::OpenAI);
+    $openai = $transformer->transform($row, ExportFormat::OpenAI);
     $unsloth = $transformer->transform($row, ExportFormat::Unsloth);
 
     expect($unsloth)->toBe($openai);
@@ -225,8 +226,8 @@ test('LlamaFactory preset converts multi-turn conversation to history format', f
 test('GenericToolCalling preset includes tools and messages', function () {
     $transformer = app(ExportPresetTransformer::class);
     $row = makeRow([
-        'tools'      => [['name' => 'get_weather', 'description' => 'Get weather']],
-        'user'       => 'What is the weather?',
+        'tools' => [['name' => 'get_weather', 'description' => 'Get weather']],
+        'user' => 'What is the weather?',
         'tool_calls' => [['name' => 'get_weather', 'arguments' => ['city' => 'Paris']]],
     ]);
 
@@ -257,7 +258,7 @@ test('DatasetExportService returns a StreamedResponse with correct headers for p
     $project = DatasetProject::factory()->create();
     $version = DatasetVersion::factory()->create(['dataset_project_id' => $project->id]);
 
-    $service  = app(DatasetExportService::class);
+    $service = app(DatasetExportService::class);
     $response = $service->export($version, ExportFormat::OpenAI);
 
     expect($response->headers->get('Content-Type'))->toContain('application/jsonl')
@@ -267,19 +268,19 @@ test('DatasetExportService returns a StreamedResponse with correct headers for p
 test('DatasetExportService transformer produces correct output for saved rows', function () {
     $project = DatasetProject::factory()->create();
     $version = DatasetVersion::factory()->create(['dataset_project_id' => $project->id]);
-    $batch   = \App\Models\GenerationBatch::factory()->create(['dataset_version_id' => $version->id]);
+    $batch = GenerationBatch::factory()->create(['dataset_version_id' => $version->id]);
 
     $row = DatasetRow::factory()->create([
-        'dataset_version_id'  => $version->id,
+        'dataset_version_id' => $version->id,
         'generation_batch_id' => $batch->id,
-        'row_index'           => 0,
-        'payload'             => ['user' => 'Hello', 'assistant' => 'Hi'],
-        'is_valid'            => true,
-        'is_duplicate'        => false,
+        'row_index' => 0,
+        'payload' => ['user' => 'Hello', 'assistant' => 'Hi'],
+        'is_valid' => true,
+        'is_duplicate' => false,
     ]);
 
     $transformer = app(ExportPresetTransformer::class);
-    $result      = $transformer->transform($row->fresh(), ExportFormat::OpenAI);
+    $result = $transformer->transform($row->fresh(), ExportFormat::OpenAI);
 
     expect($result)->toHaveKey('messages')
         ->and($result['messages'][0]['role'])->toBe('user')
@@ -289,24 +290,24 @@ test('DatasetExportService transformer produces correct output for saved rows', 
 test('DatasetExportService transformer skips duplicate rows correctly', function () {
     $project = DatasetProject::factory()->create();
     $version = DatasetVersion::factory()->create(['dataset_project_id' => $project->id]);
-    $batch   = \App\Models\GenerationBatch::factory()->create(['dataset_version_id' => $version->id]);
+    $batch = GenerationBatch::factory()->create(['dataset_version_id' => $version->id]);
 
     DatasetRow::factory()->create([
-        'dataset_version_id'  => $version->id,
+        'dataset_version_id' => $version->id,
         'generation_batch_id' => $batch->id,
-        'row_index'           => 0,
-        'payload'             => ['user' => 'Hello', 'assistant' => 'Hi'],
-        'is_valid'            => true,
-        'is_duplicate'        => false,
+        'row_index' => 0,
+        'payload' => ['user' => 'Hello', 'assistant' => 'Hi'],
+        'is_valid' => true,
+        'is_duplicate' => false,
     ]);
 
     DatasetRow::factory()->create([
-        'dataset_version_id'  => $version->id,
+        'dataset_version_id' => $version->id,
         'generation_batch_id' => $batch->id,
-        'row_index'           => 1,
-        'payload'             => ['user' => 'Hello', 'assistant' => 'Hi'],
-        'is_valid'            => true,
-        'is_duplicate'        => true,
+        'row_index' => 1,
+        'payload' => ['user' => 'Hello', 'assistant' => 'Hi'],
+        'is_valid' => true,
+        'is_duplicate' => true,
     ]);
 
     $transformer = app(ExportPresetTransformer::class);

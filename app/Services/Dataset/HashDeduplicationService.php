@@ -11,7 +11,7 @@ class HashDeduplicationService
      *
      * Normalization: lowercase, trim, stable key ordering, whitespace normalization.
      *
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     public function hash(array $payload): string
     {
@@ -30,17 +30,13 @@ class HashDeduplicationService
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     private function normalize(array $payload): string
     {
         return json_encode($this->normalizeValue($payload)) ?: '';
     }
 
-    /**
-     * @param mixed $value
-     * @return mixed
-     */
     private function normalizeValue(mixed $value): mixed
     {
         if (is_array($value)) {
@@ -48,6 +44,7 @@ class HashDeduplicationService
 
             if ($isAssoc) {
                 ksort($value);
+
                 return array_map(fn ($v) => $this->normalizeValue($v), $value);
             }
 

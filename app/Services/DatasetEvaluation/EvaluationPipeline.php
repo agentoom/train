@@ -144,7 +144,7 @@ class EvaluationPipeline
             $score >= 75.0 => 'Strong',
             $score >= 60.0 => 'Good',
             $score >= 40.0 => 'Weak',
-            default        => 'Poor',
+            default => 'Poor',
         };
     }
 

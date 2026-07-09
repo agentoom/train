@@ -2,7 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\AIProviderType;
 use App\Models\AIProvider;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,9 +20,9 @@ class AIProviderFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => \App\Models\User::factory(),
+            'user_id' => User::factory(),
             'label' => fake()->words(3, true),
-            'type' => fake()->randomElement(\App\Enums\AIProviderType::cases())->value,
+            'type' => fake()->randomElement(AIProviderType::cases())->value,
             'api_key' => fake()->sha256(),
             'base_url' => null,
             'default_model' => 'gpt-4o-mini',
@@ -30,12 +32,12 @@ class AIProviderFactory extends Factory
 
     public function openai(): static
     {
-        return $this->state(['type' => \App\Enums\AIProviderType::OpenAI->value]);
+        return $this->state(['type' => AIProviderType::OpenAI->value]);
     }
 
     public function anthropic(): static
     {
-        return $this->state(['type' => \App\Enums\AIProviderType::Anthropic->value]);
+        return $this->state(['type' => AIProviderType::Anthropic->value]);
     }
 
     public function disabled(): static

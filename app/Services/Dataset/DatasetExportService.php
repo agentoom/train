@@ -22,15 +22,15 @@ class DatasetExportService implements DatasetExporterInterface
                 $this->streamPreset($version, $format);
             } else {
                 match ($format) {
-                    ExportFormat::Json  => $this->streamJson($version),
+                    ExportFormat::Json => $this->streamJson($version),
                     ExportFormat::Jsonl => $this->streamJsonl($version),
-                    ExportFormat::Csv   => $this->streamCsv($version),
+                    ExportFormat::Csv => $this->streamCsv($version),
                 };
             }
         }, 200, [
-            'Content-Type'        => $format->mimeType(),
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-            'X-Accel-Buffering'   => 'no',
+            'Content-Type' => $format->mimeType(),
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'X-Accel-Buffering' => 'no',
         ]);
     }
 
@@ -57,7 +57,7 @@ class DatasetExportService implements DatasetExporterInterface
     private function streamJsonl(DatasetVersion $version): void
     {
         foreach ($this->rowGenerator($version) as $payload) {
-            echo json_encode($payload, JSON_UNESCAPED_UNICODE) . "\n";
+            echo json_encode($payload, JSON_UNESCAPED_UNICODE)."\n";
             ob_flush();
             flush();
         }
@@ -107,7 +107,7 @@ class DatasetExportService implements DatasetExporterInterface
                 continue;
             }
 
-            echo json_encode($transformed, JSON_UNESCAPED_UNICODE) . "\n";
+            echo json_encode($transformed, JSON_UNESCAPED_UNICODE)."\n";
             ob_flush();
             flush();
         }

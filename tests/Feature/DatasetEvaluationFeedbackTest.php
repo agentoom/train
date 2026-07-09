@@ -34,7 +34,7 @@ test('FailureAnalysisEngine returns no failures for a passing report', function 
         ],
     ]);
 
-    $engine = new FailureAnalysisEngine();
+    $engine = new FailureAnalysisEngine;
     $result = $engine->analyse($report);
 
     expect($result)->toBeInstanceOf(FailureAnalysisDTO::class)
@@ -56,7 +56,7 @@ test('FailureAnalysisEngine groups failures by type for failing evaluators', fun
         ],
     ]);
 
-    $engine = new FailureAnalysisEngine();
+    $engine = new FailureAnalysisEngine;
     $result = $engine->analyse($report);
 
     expect($result->failuresByType)->toHaveKeys(['data_quality', 'negative_ratio_imbalance'])
@@ -76,7 +76,7 @@ test('FailureAnalysisEngine detects systemic issues when multiple evaluators fai
         ],
     ]);
 
-    $engine = new FailureAnalysisEngine();
+    $engine = new FailureAnalysisEngine;
     $result = $engine->analyse($report);
 
     expect($result->systemic)->not->toBeEmpty();
@@ -89,7 +89,7 @@ test('FailureAnalysisEngine toArray returns expected keys', function () {
         'evaluator_scores' => [],
     ]);
 
-    $engine = new FailureAnalysisEngine();
+    $engine = new FailureAnalysisEngine;
     $array = $engine->analyse($report)->toArray();
 
     expect($array)->toHaveKeys(['failures_by_type', 'systemic_issues', 'evaluator_scores']);
@@ -109,8 +109,8 @@ test('SignalBuilder emits INCREASE_NEGATIVE_SAMPLING when ratio is too low', fun
         ],
     ]);
 
-    $analysis = (new FailureAnalysisEngine())->analyse($report);
-    $signals = (new DatasetImprovementSignalBuilder())->build($analysis, $report);
+    $analysis = (new FailureAnalysisEngine)->analyse($report);
+    $signals = (new DatasetImprovementSignalBuilder)->build($analysis, $report);
 
     $types = array_map(fn (GenerationControlSignalDTO $s) => $s->signalType, $signals);
     expect($types)->toContain(SignalType::IncreaseNegativeSampling);
@@ -126,8 +126,8 @@ test('SignalBuilder emits INJECT_EDGE_CASES when edge case score is low', functi
         ],
     ]);
 
-    $analysis = (new FailureAnalysisEngine())->analyse($report);
-    $signals = (new DatasetImprovementSignalBuilder())->build($analysis, $report);
+    $analysis = (new FailureAnalysisEngine)->analyse($report);
+    $signals = (new DatasetImprovementSignalBuilder)->build($analysis, $report);
 
     $types = array_map(fn (GenerationControlSignalDTO $s) => $s->signalType, $signals);
     expect($types)->toContain(SignalType::InjectEdgeCases);
@@ -143,8 +143,8 @@ test('SignalBuilder emits REDUCE_DUPLICATES when duplicate rate is high', functi
         ],
     ]);
 
-    $analysis = (new FailureAnalysisEngine())->analyse($report);
-    $signals = (new DatasetImprovementSignalBuilder())->build($analysis, $report);
+    $analysis = (new FailureAnalysisEngine)->analyse($report);
+    $signals = (new DatasetImprovementSignalBuilder)->build($analysis, $report);
 
     $types = array_map(fn (GenerationControlSignalDTO $s) => $s->signalType, $signals);
     expect($types)->toContain(SignalType::ReduceDuplicates);
@@ -164,8 +164,8 @@ test('SignalBuilder emits no signals for a healthy report', function () {
         ],
     ]);
 
-    $analysis = (new FailureAnalysisEngine())->analyse($report);
-    $signals = (new DatasetImprovementSignalBuilder())->build($analysis, $report);
+    $analysis = (new FailureAnalysisEngine)->analyse($report);
+    $signals = (new DatasetImprovementSignalBuilder)->build($analysis, $report);
 
     expect($signals)->toBeEmpty();
 });
@@ -180,8 +180,8 @@ test('SignalBuilder signal strength is between 0 and 1', function () {
         ],
     ]);
 
-    $analysis = (new FailureAnalysisEngine())->analyse($report);
-    $signals = (new DatasetImprovementSignalBuilder())->build($analysis, $report);
+    $analysis = (new FailureAnalysisEngine)->analyse($report);
+    $signals = (new DatasetImprovementSignalBuilder)->build($analysis, $report);
 
     foreach ($signals as $signal) {
         expect($signal->strength)->toBeGreaterThanOrEqual(0.0)
@@ -238,7 +238,7 @@ test('FeedbackReportRepository stores a feedback report', function () {
         systemHealthScore: 50.0,
     );
 
-    $repo = new FeedbackReportRepository();
+    $repo = new FeedbackReportRepository;
     $stored = $repo->store($dto);
 
     expect($stored)->toBeInstanceOf(DatasetFeedbackReport::class)
@@ -251,7 +251,7 @@ test('FeedbackReportRepository finds report by evaluation report id', function (
     $evalReport = DatasetEvaluationReport::factory()->create(['overall_score' => 60.0, 'passed' => false, 'evaluator_scores' => []]);
     $feedback = DatasetFeedbackReport::factory()->create(['evaluation_run_id' => $evalReport->id]);
 
-    $repo = new FeedbackReportRepository();
+    $repo = new FeedbackReportRepository;
     $found = $repo->findByEvaluationReportId($evalReport->id);
 
     expect($found)->not->toBeNull()
@@ -274,9 +274,9 @@ test('DatasetEvaluationFeedbackService process persists a feedback report', func
     ]);
 
     $service = new DatasetEvaluationFeedbackService(
-        new FailureAnalysisEngine(),
-        new DatasetImprovementSignalBuilder(),
-        new FeedbackReportRepository(),
+        new FailureAnalysisEngine,
+        new DatasetImprovementSignalBuilder,
+        new FeedbackReportRepository,
     );
 
     $result = $service->process($evalReport);
@@ -301,9 +301,9 @@ test('DatasetEvaluationFeedbackService system health score is penalised per sign
     ]);
 
     $service = new DatasetEvaluationFeedbackService(
-        new FailureAnalysisEngine(),
-        new DatasetImprovementSignalBuilder(),
-        new FeedbackReportRepository(),
+        new FailureAnalysisEngine,
+        new DatasetImprovementSignalBuilder,
+        new FeedbackReportRepository,
     );
 
     $result = $service->process($evalReport);
@@ -326,7 +326,7 @@ test('Phase 1.5 evaluate does NOT call feedback service when config is disabled'
     $mockFeedback->shouldNotReceive('process');
     $this->app->instance(DatasetEvaluationFeedbackService::class, $mockFeedback);
 
-    $service = new DatasetEvaluationService();
+    $service = new DatasetEvaluationService;
     $service->evaluate($version);
 
     expect(true)->toBeTrue();
@@ -345,7 +345,7 @@ test('Phase 1.5 evaluate calls feedback service when config is enabled', functio
     );
     $this->app->instance(DatasetEvaluationFeedbackService::class, $mockFeedback);
 
-    $service = new DatasetEvaluationService();
+    $service = new DatasetEvaluationService;
     $service->evaluate($version);
 
     expect(true)->toBeTrue();

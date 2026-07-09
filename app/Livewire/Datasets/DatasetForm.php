@@ -7,14 +7,15 @@ use App\Actions\Datasets\UpdateDatasetProjectAction;
 use App\Models\AIProvider;
 use App\Models\DatasetProject;
 use App\Models\DatasetSource;
+use App\Services\AI\ProviderResolverService;
 use App\Services\Dataset\DatasetSettingsExportService;
 use App\Services\Dataset\DatasetSourceParsingService;
-use App\Services\AI\ProviderResolverService;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -101,7 +102,7 @@ class DatasetForm extends Component
 
     public ?int $augmentationExpandPercent = null;
 
-    /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
+    /** @var TemporaryUploadedFile|null */
     public $sourceFile = null;
 
     public function mount(?DatasetProject $project = null): void
@@ -291,7 +292,7 @@ class DatasetForm extends Component
         if (! $this->project) {
             Flux::toast(variant: 'warning', text: 'Save the dataset project first before exporting.');
 
-            return response()->streamDownload(fn () => print(''), 'dataset.json');
+            return response()->streamDownload(fn () => print (''), 'dataset.json');
         }
 
         $this->authorize('view', $this->project);

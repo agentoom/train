@@ -1,6 +1,8 @@
 <?php
 
+use App\Actions\Datasets\UpdateDatasetProjectAction;
 use App\DTOs\GenerationResultDTO;
+use App\DTOs\PromptConfigDTO;
 use App\Enums\BatchStatus;
 use App\Jobs\GenerateDatasetBatchJob;
 use App\Models\AIProvider;
@@ -11,8 +13,19 @@ use App\Models\DatasetVersion;
 use App\Models\GenerationBatch;
 use App\Services\AI\InferenceExecutionService;
 use App\Services\Dataset\AugmentationPromptBuilderService;
+use App\Services\Dataset\ConversationPromptBuilderService;
 use App\Services\Dataset\DatasetProgressService;
 use App\Services\Dataset\DatasetSourceParsingService;
+use App\Services\Dataset\DatasetValidationService;
+use App\Services\Dataset\HashDeduplicationService;
+use App\Services\Dataset\NegativeExampleService;
+use App\Services\Dataset\PromptBuilderService;
+use App\Services\Dataset\SemanticDeduplicationService;
+use App\Services\Evaluation\DatasetEvaluationService;
+use App\Services\Pipeline\CriticService;
+use App\Services\Pipeline\RefinerService;
+use App\Support\Cost\CostEstimator;
+use App\Support\Json\JsonRepairer;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -20,7 +33,7 @@ use Illuminate\Support\Facades\Storage;
 
 test('parses JSONL content into rows', function () {
     $service = app(DatasetSourceParsingService::class);
-    $content = '{"user":"Hello","assistant":"Hi"}' . "\n" . '{"user":"Bye","assistant":"Goodbye"}';
+    $content = '{"user":"Hello","assistant":"Hi"}'."\n".'{"user":"Bye","assistant":"Goodbye"}';
     $file = UploadedFile::fake()->createWithContent('data.jsonl', $content);
 
     $result = $service->parse($file);
@@ -66,7 +79,7 @@ test('parses TXT content into rows with text key', function () {
 
 test('infers schema from parsed rows', function () {
     $service = app(DatasetSourceParsingService::class);
-    $content = '{"user":"Hello","score":5}' . "\n" . '{"user":"Bye","score":3}';
+    $content = '{"user":"Hello","score":5}'."\n".'{"user":"Bye","score":3}';
     $file = UploadedFile::fake()->createWithContent('data.jsonl', $content);
 
     $result = $service->parse($file);
@@ -79,7 +92,7 @@ test('infers schema from parsed rows', function () {
 
 test('builds metadata with field distribution', function () {
     $service = app(DatasetSourceParsingService::class);
-    $content = '{"user":"Hello"}' . "\n" . '{"user":"Bye"}';
+    $content = '{"user":"Hello"}'."\n".'{"user":"Bye"}';
     $file = UploadedFile::fake()->createWithContent('data.jsonl', $content);
 
     $result = $service->parse($file);
@@ -112,7 +125,7 @@ test('loadRows reads stored JSONL file', function () {
     Storage::fake('local');
     $service = app(DatasetSourceParsingService::class);
 
-    $content = '{"text":"row1"}' . "\n" . '{"text":"row2"}';
+    $content = '{"text":"row1"}'."\n".'{"text":"row2"}';
     Storage::disk('local')->put('dataset-sources/test.jsonl', $content);
 
     $rows = $service->loadRows('dataset-sources/test.jsonl', 'jsonl');
@@ -226,7 +239,7 @@ test('GenerateDatasetBatchJob uses augmentation prompt when augmentation_enabled
 
     $mockAugBuilder = Mockery::mock(AugmentationPromptBuilderService::class);
     $mockAugBuilder->shouldReceive('buildFromVersion')->once()->andReturn(
-        new \App\DTOs\PromptConfigDTO(
+        new PromptConfigDTO(
             systemPrompt: 'Augmentation system prompt',
             userPrompt: 'Generate 2 augmented rows.',
             model: 'gpt-4o-mini',
@@ -240,18 +253,18 @@ test('GenerateDatasetBatchJob uses augmentation prompt when augmentation_enabled
 
     (new GenerateDatasetBatchJob($batch->id))->handle(
         app(InferenceExecutionService::class),
-        app(\App\Services\Dataset\PromptBuilderService::class),
-        app(\App\Services\Dataset\ConversationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetValidationService::class),
+        app(PromptBuilderService::class),
+        app(ConversationPromptBuilderService::class),
+        app(DatasetValidationService::class),
         app(DatasetProgressService::class),
-        app(\App\Support\Json\JsonRepairer::class),
-        app(\App\Support\Cost\CostEstimator::class),
-        app(\App\Services\Dataset\HashDeduplicationService::class),
-        app(\App\Services\Dataset\SemanticDeduplicationService::class),
-        app(\App\Services\Evaluation\DatasetEvaluationService::class),
-        app(\App\Services\Pipeline\CriticService::class),
-        app(\App\Services\Pipeline\RefinerService::class),
-        app(\App\Services\Dataset\NegativeExampleService::class),
+        app(JsonRepairer::class),
+        app(CostEstimator::class),
+        app(HashDeduplicationService::class),
+        app(SemanticDeduplicationService::class),
+        app(DatasetEvaluationService::class),
+        app(CriticService::class),
+        app(RefinerService::class),
+        app(NegativeExampleService::class),
         app(AugmentationPromptBuilderService::class),
         app(DatasetSourceParsingService::class),
     );
@@ -294,18 +307,18 @@ test('GenerateDatasetBatchJob falls back to standard prompt when augmentation di
 
     (new GenerateDatasetBatchJob($batch->id))->handle(
         app(InferenceExecutionService::class),
-        app(\App\Services\Dataset\PromptBuilderService::class),
-        app(\App\Services\Dataset\ConversationPromptBuilderService::class),
-        app(\App\Services\Dataset\DatasetValidationService::class),
+        app(PromptBuilderService::class),
+        app(ConversationPromptBuilderService::class),
+        app(DatasetValidationService::class),
         app(DatasetProgressService::class),
-        app(\App\Support\Json\JsonRepairer::class),
-        app(\App\Support\Cost\CostEstimator::class),
-        app(\App\Services\Dataset\HashDeduplicationService::class),
-        app(\App\Services\Dataset\SemanticDeduplicationService::class),
-        app(\App\Services\Evaluation\DatasetEvaluationService::class),
-        app(\App\Services\Pipeline\CriticService::class),
-        app(\App\Services\Pipeline\RefinerService::class),
-        app(\App\Services\Dataset\NegativeExampleService::class),
+        app(JsonRepairer::class),
+        app(CostEstimator::class),
+        app(HashDeduplicationService::class),
+        app(SemanticDeduplicationService::class),
+        app(DatasetEvaluationService::class),
+        app(CriticService::class),
+        app(RefinerService::class),
+        app(NegativeExampleService::class),
         app(AugmentationPromptBuilderService::class),
         app(DatasetSourceParsingService::class),
     );
@@ -336,7 +349,7 @@ test('augmentation fields are persisted on DatasetProject', function () {
 test('UpdateDatasetProjectAction persists augmentation fields', function () {
     $project = DatasetProject::factory()->create();
 
-    app(\App\Actions\Datasets\UpdateDatasetProjectAction::class)->execute($project, [
+    app(UpdateDatasetProjectAction::class)->execute($project, [
         'augmentation_enabled' => true,
         'augmentation_mode' => 'diverse',
         'augmentation_strength' => 0.7,

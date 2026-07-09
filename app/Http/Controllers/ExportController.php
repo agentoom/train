@@ -18,7 +18,13 @@ class ExportController extends Controller
         Gate::authorize('view', $project);
 
         $formatValue = $request->query('format', 'json');
-        $format = ExportFormat::tryFrom($formatValue) ?? ExportFormat::Json;
+        $format = ExportFormat::tryFrom($formatValue);
+
+        if (! $format) {
+            abort(422, __('Invalid export format. Allowed values: :formats.', [
+                'formats' => implode(', ', array_map(fn (ExportFormat $f) => $f->value, ExportFormat::cases())),
+            ]));
+        }
 
         return $this->exportAction->execute($project, $format);
     }
